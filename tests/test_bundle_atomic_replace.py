@@ -109,33 +109,49 @@ def test_first_time_create(tmp_path: Path) -> None:
 
 
 def test_rollback_on_partial_rename_failure(tmp_path: Path, monkeypatch) -> None:
-    """If second os.rename() fails mid-commit, first is rolled back."""
+    """If second os.rename() fails mid-commit, first is rolled back.
+
+    Models a transient OS-level failure: the first rename succeeds (tmp_a_landing
+    → target_a), then the second fails (tmp_b_landing → target_b). Rollback
+    must move pending_a back over target_a AND move pending_b back to target_b
+    so both files end up with their pre-import content.
+
+    Mock fails the OFFENDING commit-rename exactly once (transient failure
+    semantics — real ENOSPC / EAGAIN / etc. don't permanently block subsequent
+    renames). The rollback's own renames succeed.
+    """
     target_a = tmp_path / "mnemos.db"
     target_b = tmp_path / "ic-engine.db"
     target_a.write_text("OLD_A")
     target_b.write_text("OLD_B")
 
     real_rename = os.rename
-    rename_calls = {"count": 0}
+    failure_armed = {"value": True}
 
     def flaky_rename(src: str, dst: str) -> None:
-        # Fail specifically on the rename of tmp_b_landing → target_b
-        # (which is the second rename of the final-commit pair)
-        if str(dst) == str(target_b) and rename_calls["count"] >= 4:
-            # 4 prior renames = both .pending-replace sentinels written + one tmp landing → target_a
-            raise OSError("simulated rename failure")
-        rename_calls["count"] += 1
+        # Fail exactly once on the commit of tmp_b_landing → target_b.
+        # The src path looks like .../<tmp>/.ic-engine.db.replace and
+        # the dst is target_b. After firing once, disarm so rollback works.
+        if (
+            failure_armed["value"]
+            and str(dst) == str(target_b)
+            and ".replace" in str(src)
+        ):
+            failure_armed["value"] = False  # transient: only fire once
+            raise OSError("simulated transient rename failure")
         real_rename(src, dst)
 
     monkeypatch.setattr(os, "rename", flaky_rename)
 
-    with pytest.raises(OSError, match="simulated rename failure"):
+    with pytest.raises(OSError, match="simulated transient rename failure"):
         with atomic_two_file_replace(target_a, target_b) as (tmp_a, tmp_b):
             tmp_a.write_text("NEW_A")
             tmp_b.write_text("NEW_B")
 
     # Both targets should be the OLD content (rollback successful)
-    # Note: target_a may briefly have been replaced before rollback; the rollback
-    # rename moves the .pending-replace back over it.
+    # target_a was briefly NEW_A; the rollback's os.rename(pending_a, target_a)
+    # moved the .pending-replace sentinel back, restoring OLD_A content.
+    # target_b never got committed (the failing rename was on it); rollback
+    # restored it from pending_b sentinel.
     assert target_a.read_text() == "OLD_A"
     assert target_b.read_text() == "OLD_B"
