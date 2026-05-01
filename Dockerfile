@@ -56,6 +56,30 @@ RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install \
         --python /build/.venv/bin/python \
         --reinstall --no-deps /build/ic-engine
 
+# Drop CUDA stack and replace with CPU-only torch.
+# clio (transitive dep of ic-engine) pulls full GPU torch by default,
+# which drags 2.7 GB of nvidia/* + 639 MB triton + 1.1 GB GPU torch.
+# ic-engine does not use CUDA at runtime, so we strip the whole stack
+# and reinstall CPU-only torch (~200 MB).
+# Expected image-size win: ~4 GB.
+#
+# Note: uv-built venvs do not include pip, so we use `uv pip` (uv's
+# pip-compatible CLI) for both list and uninstall. The earlier attempt
+# using `python -m pip` failed silently inside xargs because pip isn't
+# in the venv.
+RUN set -ex; \
+    PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
+       | /usr/local/bin/python3 -c "import json, sys; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower().startswith('nvidia') or p['name'].lower() in ('triton','torch')))"); \
+    echo "uninstalling: $PKGS"; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip uninstall --python /build/.venv/bin/python $PKGS; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install \
+        --python /build/.venv/bin/python \
+        --extra-index-url https://download.pytorch.org/whl/cpu \
+        --index-strategy unsafe-best-match \
+        torch; \
+    echo "verifying torch is CPU-only..."; \
+    /build/.venv/bin/python -c "import torch; print('torch:', torch.__version__, 'cuda:', torch.cuda.is_available())"
+
 # Copy v4.0 bridge code (MnemosClient, MCP server wrappers, dashboard static files)
 # These live in this repo (mnemos-os/mnemos-ic-runtime) at /bridge
 COPY bridge/ /build/bridge/
@@ -109,12 +133,23 @@ WORKDIR /opt/ic-engine
 
 # Environment defaults — overridable in compose env: block
 ENV PATH="/opt/ic-engine/.venv/bin:${PATH}"
-ENV IC_ENGINE_DB=/data/ic-engine.db
+
+# Bridge-side env (read by investorclaw_bridge.serve / mcp_server)
 ENV IC_PORTFOLIO_DIR=/data/portfolios
 ENV IC_REPORTS_DIR=/data/reports
 ENV IC_KEYS_FILE=/data/keys.env
 ENV IC_MCP_BIND=0.0.0.0:8090
 ENV IC_DASHBOARD_BIND=0.0.0.0:8092
+
+# ic-engine reads its own canonical env-var names (INVESTOR_CLAW_*).
+# Set them to the same values so subprocess'd analyzers honor /data/.
+# Without these, ic-engine path_resolver.get_portfolio_dir() falls back
+# to ~/portfolios (then to <skill_dir>/portfolios in site-packages).
+ENV INVESTOR_CLAW_PORTFOLIO_DIR=/data/portfolios
+ENV INVESTOR_CLAW_REPORTS_DIR=/data/reports
+ENV INVESTOR_CLAW_DATED_REPORTS=false
+ENV INVESTORCLAW_PORTFOLIO_DIR=/data/portfolios
+
 ENV MNEMOS_BASE=http://mnemos:5002
 ENV PYTHONUNBUFFERED=1
 
