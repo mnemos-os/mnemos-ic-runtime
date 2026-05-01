@@ -46,6 +46,38 @@ REPORTS_DIR = Path(os.environ.get("IC_REPORTS_DIR", "/data/reports"))
 KEYS_FILE = Path(os.environ.get("IC_KEYS_FILE", "/data/keys.env"))
 
 
+# Provider key map — translates per-provider key env vars (set by the
+# operator in /data/keys.env) into the ic-engine narrative env contract.
+# Default endpoint family is set in the Dockerfile (Together AI); the
+# operator only needs to set ONE of these in keys.env to enable narratives.
+#
+# Cost policy: Together MiniMax is the fleet default (cheap, Anthropic-free).
+# If Google is configured, the operator should pin a Flash model — Pro
+# blew $70/night in the 2026-04-30 incident.
+_PROVIDER_KEY_FALLBACKS = (
+    "INVESTORCLAW_NARRATIVE_API_KEY",  # explicit override wins
+    "TOGETHER_API_KEY",                # fleet default
+    "GOOGLE_API_KEY",                  # only if INVESTORCLAW_NARRATIVE_MODEL is a -flash variant
+    "GEMINI_API_KEY",                  # alias used by some keys.env files
+    "OPENAI_API_KEY",                  # last resort
+)
+
+
+def _resolve_narrative_api_key() -> str | None:
+    """Return the first non-empty narrative API key from the fallback chain.
+
+    Reads from process env (which has been pre-loaded from /data/keys.env
+    by the bridge entrypoint via key_resolver). Returns None if no key is
+    configured — narrative synthesis is degraded but the deterministic
+    engine still runs.
+    """
+    for var in _PROVIDER_KEY_FALLBACKS:
+        v = os.environ.get(var, "").strip()
+        if v:
+            return v
+    return None
+
+
 # ──────────────────────────────────────────────────────────────────────
 # ic-engine subprocess invocation
 # ──────────────────────────────────────────────────────────────────────
@@ -87,11 +119,23 @@ async def _run_ic_engine(
     full_cmd = [bin_path, *args]
     logger.info("mcp.ic_engine.invoke", cmd=full_cmd)
 
+    # Subprocess env: inherit parent + inject the narrative API key so
+    # ic_engine.rendering.stonkmode can call Together (or whichever
+    # endpoint INVESTORCLAW_NARRATIVE_ENDPOINT points to). Without this,
+    # narrative synthesis silently degrades to stub text.
+    sub_env = dict(os.environ)
+    api_key = _resolve_narrative_api_key()
+    if api_key:
+        sub_env.setdefault("INVESTORCLAW_NARRATIVE_API_KEY", api_key)
+        sub_env.setdefault("INVESTORCLAW_STONKMODE_API_KEY", api_key)
+        sub_env.setdefault("INVESTORCLAW_CONSULTATION_API_KEY", api_key)
+
     proc = await asyncio.create_subprocess_exec(
         *full_cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         cwd=str(PORTFOLIO_DIR.parent),
+        env=sub_env,
     )
     # Bug fix (2026-05-01): if the FastMCP request handler is cancelled mid-call
     # (e.g., the agent's HTTP client times out and aborts), `proc.communicate()`

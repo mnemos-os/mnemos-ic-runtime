@@ -243,6 +243,27 @@ ENV INVESTORCLAW_PORTFOLIO_DIR=/data/portfolios
 ENV MNEMOS_BASE=http://mnemos:5002
 ENV PYTHONUNBUFFERED=1
 
+# Narrative-synthesis defaults — Together AI MiniMax-M2 / gemma4.
+# Together is the fleet default per CLAUDE.md primary directive 5
+# ("Anthropic forbidden as LLM provider for the nclawzero/zeroclaw stack;
+#  MiniMax-via-Together is fleet default"). Cheaper than Gemini Pro by
+# a wide margin. If the operator wants to point at Google instead, they
+# should set INVESTORCLAW_NARRATIVE_MODEL to a *Flash* model — Pro is the
+# expensive one (Pro: $1.25/M input, $5/M output; Flash: $0.10/$0.40).
+# Last cost incident: $70/night API bill from accidental Gemini Pro use,
+# 2026-04-30; documented in feedback_llm_provider_cost_policy.md.
+#
+# The bridge resolves $TOGETHER_API_KEY (read from /data/keys.env) into
+# INVESTORCLAW_NARRATIVE_API_KEY at subprocess-spawn time, so operators
+# only need to set the per-provider key file once.
+ENV INVESTORCLAW_NARRATIVE_PROVIDER=openai_compat
+ENV INVESTORCLAW_NARRATIVE_ENDPOINT=https://api.together.xyz/v1
+ENV INVESTORCLAW_NARRATIVE_MODEL=MiniMaxAI/MiniMax-M2
+# Hybrid / local-first deployments can override:
+#   INVESTORCLAW_NARRATIVE_ENDPOINT=http://192.168.207.96:11434/v1
+#   INVESTORCLAW_NARRATIVE_MODEL=gemma4:e4b
+# (CERBERUS Ollama on the fleet)
+
 EXPOSE 8090 8092
 
 # Healthcheck — overridden by compose for finer control
