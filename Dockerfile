@@ -119,6 +119,70 @@ RUN set -ex; \
     echo "verifying GPL/LGPL strip..."; \
     /build/.venv/bin/python -c "import importlib.metadata as md; banned={'pymupdf','premailer','cssutils','encutils'}; found=[d.metadata['Name'] for d in md.distributions() if (d.metadata['Name'] or '').lower() in banned]; assert not found, f'still installed: {found}'; print('GPL/LGPL packages absent: pymupdf premailer cssutils encutils')"
 
+# Strip the torch / transformers / OpenCV stack.
+#
+# clio declares sentence-transformers as a hard dep, which transitively
+# pulls torch + transformers + safetensors + tokenizers + huggingface-hub +
+# sympy + (in some configs) opencv-python-headless. After our CUDA strip
+# above, that's still ~1 GB of binary weight in the venv. None of it is
+# load-bearing for the v4.0 beta deterministic-engine path:
+#
+#   - clio/runtime/hardware.py:816 wraps `import torch` in try/except;
+#     falls through to HardwareProfile-based "cuda"/"mps"/"cpu" detection.
+#   - clio/extract/schema_map.py:170 has an unguarded `import torch`, but
+#     that method (.map_columns) only fires when a user uploads a broker
+#     CSV with non-canonical column names. For known broker formats
+#     (UBS xls, Schwab CSV, etc.) the path never executes.
+#   - The full author-claude fix is in
+#     docs/handoff-2026-05-01-clio-torch-trim-for-author-claude.md
+#     (swap sentence-transformers -> fastembed, ONNX-based, ~10-20 MB,
+#     proven in prod mnemos at PYTHIA :5002).
+#
+# Until the upstream clio swap lands we strip the stack at the runtime
+# layer. Unknown-broker schema mapping fails loudly on use — that's the
+# documented v4.0 beta limitation.
+RUN set -ex; \
+    PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
+       | /usr/local/bin/python3 -c "import json, sys; ml={'torch','torchvision','torchaudio','functorch','torchgen','transformers','sentence-transformers','safetensors','tokenizers','huggingface-hub','accelerate','sympy','opencv-python','opencv-python-headless','onnxruntime-gpu'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in ml))"); \
+    echo "stripping ML stack: $PKGS"; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip uninstall --python /build/.venv/bin/python $PKGS || true; \
+    echo "verifying ML stack strip..."; \
+    /build/.venv/bin/python -c "import importlib.metadata as md; banned={'torch','transformers','sentence-transformers','safetensors','tokenizers','huggingface-hub','sympy','opencv-python-headless'}; found=[d.metadata['Name'] for d in md.distributions() if (d.metadata['Name'] or '').lower() in banned]; assert not found, f'still installed: {found}'; print('ML stack absent: torch transformers sentence-transformers safetensors tokenizers huggingface-hub sympy opencv-python-headless')"; \
+    echo "verifying clio still importable (its torch usage is lazy)..."; \
+    /build/.venv/bin/python -c "import clio; print('clio import ok:', getattr(clio, '__version__', 'unknown'))"; \
+    /build/.venv/bin/python -c "from clio.runtime.hardware import detect_device; print('clio device detection (no torch):', detect_device())"
+
+# Post-strip cleanup: orphans + leftovers + optional bits.
+#
+#   scikit-learn (31 MB)   was a transitive of transformers; now orphaned.
+#                          ic-engine doesn't import sklearn directly.
+#   cuda-bindings/         NVIDIA's newer CUDA Python packages (cuda_*
+#   cuda-pathfinder/       naming, missed by the earlier nvidia-* glob).
+#   cuda-toolkit (~23 MB)  Orphaned now that torch is gone.
+#   matplotlib + deps      Only used in ic_engine/commands/optimize.py:41
+#   (~100 MB)              at module level. We hot-patch optimize.py to
+#                          make the matplotlib import lazy at runtime,
+#                          then strip the package. Optimize results are
+#                          still computable (numpy/scipy/cvxpy do the
+#                          math); only the inline chart rendering is lost.
+#                          The dashboard renders charts client-side anyway.
+#   litellm (61 MB)        Only used in ic_engine/rendering/stonkmode.py
+#                          for narrative synthesis. The bridge calls
+#                          Together AI / OpenAI / etc directly via httpx
+#                          on the rendering path, so litellm is dead in
+#                          v4.0. Drop it; if the engine's stonkmode
+#                          renderer needs it, the import will fail loud.
+RUN set -ex; \
+    /usr/local/bin/python3 /build/bridge/patches/lazy_matplotlib_optimize.py \
+        /build/.venv/lib/python3.12/site-packages; \
+    PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
+       | /usr/local/bin/python3 -c "import json, sys; orphans={'scikit-learn','cuda-bindings','cuda-pathfinder','cuda-toolkit','litellm','matplotlib','fonttools','contourpy','cycler','kiwisolver','pillow'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in orphans))"); \
+    echo "stripping orphans + optional: $PKGS"; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip uninstall --python /build/.venv/bin/python $PKGS || true; \
+    echo "verifying ic-engine still importable..."; \
+    /build/.venv/bin/python -c "import ic_engine.commands.optimize; print('optimize import ok (matplotlib lazy)')"; \
+    /build/.venv/bin/python -c "import ic_engine; print('ic_engine ok')"
+
 # ============================================================================
 # Stage 2: runtime — minimal image with venv + bridge + dashboard
 # ============================================================================
