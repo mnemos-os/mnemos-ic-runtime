@@ -46,6 +46,16 @@ WORKDIR /build/ic-engine
 RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv sync --python 3.12 --frozen \
  || UV_PROJECT_ENVIRONMENT=/build/.venv uv sync --python 3.12
 
+# uv sync installs the local project (`investorclaw`) editable by default,
+# which writes a __editable___investorclaw_finder.py with MAPPING pointing
+# at the build-stage path (/build/ic-engine/investorclaw). After we COPY
+# the venv into the runtime stage, that path is gone, so `import investorclaw`
+# fails with ModuleNotFoundError. Force a non-editable reinstall so the
+# investorclaw module lands in site-packages and survives the stage hop.
+RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install \
+        --python /build/.venv/bin/python \
+        --reinstall --no-deps /build/ic-engine
+
 # Copy v4.0 bridge code (MnemosClient, MCP server wrappers, dashboard static files)
 # These live in this repo (mnemos-os/mnemos-ic-runtime) at /bridge
 COPY bridge/ /build/bridge/
