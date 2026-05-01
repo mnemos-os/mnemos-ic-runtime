@@ -35,7 +35,7 @@ import httpx
 
 DEFAULT_BASE = os.environ.get("IC_MCP_BASE", "http://127.0.0.1:8090")
 DEFAULT_PROMPTS = "/tmp/nlq-prompts.json"
-DEFAULT_TIMEOUT = 180.0
+DEFAULT_TIMEOUT = 240.0   # 240s absorbs ic-engine v2.5.x cold-cache (~45-90s) + margin for retries
 DEFAULT_TRIALS = 3
 PARALLEL_STREAMS = 4
 PARALLEL_PROMPTS = ["p01-holdings-1", "p03-performance-1", "p06-news-holdings-1", "p15-bonds-1"]

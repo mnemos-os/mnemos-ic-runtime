@@ -88,6 +88,36 @@ def main() -> int:
 
     from . import mcp_server
 
+    # Load /data/keys.env into os.environ so ic-engine subprocesses inherit
+    # the keys (FINNHUB_KEY, MASSIVE_API_KEY, ALPHA_VANTAGE_KEY, NEWSAPI_KEY,
+    # TOGETHER/INVESTORCLAW_NARRATIVE_API_KEY, etc.). The key_resolver module
+    # parses + validates mode 0600; we only set keys not already in env so
+    # operator-set ENV (Dockerfile / compose) wins over file values.
+    from pathlib import Path
+    from . import key_resolver
+
+    keys_path = Path(os.environ.get("IC_KEYS_FILE", "/data/keys.env"))
+    try:
+        loaded = key_resolver.load_keys_env(keys_path)
+        added = 0
+        for k, v in loaded.items():
+            if k not in os.environ:
+                os.environ[k] = v
+                added += 1
+        logger.info(
+            "bridge.keys.loaded",
+            path=str(keys_path),
+            in_file=len(loaded),
+            added_to_env=added,
+            keys=sorted(loaded.keys()),
+        )
+    except Exception as e:
+        logger.warning(
+            "bridge.keys.load_failed",
+            path=str(keys_path),
+            error=f"{type(e).__name__}: {e}",
+        )
+
     mcp_bind = os.environ.get("IC_MCP_BIND", "0.0.0.0:8090")
     dashboard_bind = os.environ.get("IC_DASHBOARD_BIND", "0.0.0.0:8092")
     mnemos_base = os.environ.get("MNEMOS_BASE", "http://mnemos:5002")

@@ -90,7 +90,7 @@ class IcEngineError(Exception):
 async def _run_ic_engine(
     args: list[str],
     *,
-    timeout_sec: float = 120.0,
+    timeout_sec: float = 240.0,
 ) -> dict[str, Any]:
     """Run `investorclaw <args>` in a subprocess; return parsed result.
 

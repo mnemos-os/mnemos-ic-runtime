@@ -258,7 +258,13 @@ ENV PYTHONUNBUFFERED=1
 # only need to set the per-provider key file once.
 ENV INVESTORCLAW_NARRATIVE_PROVIDER=openai_compat
 ENV INVESTORCLAW_NARRATIVE_ENDPOINT=https://api.together.xyz/v1
-ENV INVESTORCLAW_NARRATIVE_MODEL=MiniMaxAI/MiniMax-M2
+ENV INVESTORCLAW_NARRATIVE_MODEL=MiniMaxAI/MiniMax-M2.7
+# Consultation tier (deeper analysis, used by select code paths) — defaults
+# to CERBERUS vLLM when running on the fleet network. Falls back to the
+# narrative endpoint if unreachable. Operator can override per deployment.
+ENV INVESTORCLAW_CONSULTATION_ENABLED=true
+ENV INVESTORCLAW_CONSULTATION_ENDPOINT=http://192.168.207.96:8080
+ENV INVESTORCLAW_CONSULTATION_MODEL=gemma4-consult
 # Hybrid / local-first deployments can override:
 #   INVESTORCLAW_NARRATIVE_ENDPOINT=http://192.168.207.96:11434/v1
 #   INVESTORCLAW_NARRATIVE_MODEL=gemma4:e4b
