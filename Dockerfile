@@ -80,18 +80,44 @@ RUN set -ex; \
     echo "verifying torch is CPU-only..."; \
     /build/.venv/bin/python -c "import torch; print('torch:', torch.__version__, 'cuda:', torch.cuda.is_available())"
 
-# Copy v4.0 bridge code (MnemosClient, MCP server wrappers, dashboard static files)
-# These live in this repo (mnemos-os/mnemos-ic-runtime) at /bridge
+# Strip GPL/LGPL packages to keep the runtime image redistribution-clean
+# under Apache-2.0. The four targets we care about:
+#
+#   PyMuPDF (AGPL-3.0)  — pulled by clio for vision PDF extraction.
+#                         clio guards `import fitz` in a try/except inside
+#                         clio.extract.vision; uninstalling produces a
+#                         graceful runtime error on vision-only paths.
+#                         Non-vision paths are unaffected.
+#   premailer (LGPL via cssutils) — used in ic_engine.rendering.template_engine
+#                         for inlining CSS into HTML reports. The module
+#                         already wraps `from premailer import Premailer` in
+#                         try/except and sets PREMAILER_AVAILABLE=False on
+#                         missing import; reports render without inlined CSS.
+#   cssutils (LGPL-3.0)  — only used as premailer's dep.
+#   encutils (LGPL-3.0)  — transitive of cssutils.
+#   frozendict (LGPL-3.0) — yfinance imports `from frozendict import frozendict`
+#                         unconditionally, so we replace with a tiny pure-Python
+#                         Apache-2.0 shim. yfinance's use is hash-stability for
+#                         dict cache keys; a subclass-of-dict shim suffices.
+# Copy v4.0 bridge code (MnemosClient, MCP server wrappers, dashboard
+# static files, frozendict shim) before any post-uv-sync surgery that
+# references files in /build/bridge/.
 COPY bridge/ /build/bridge/
 COPY dashboard/ /build/dashboard/
 # Non-editable install: bridge code lands in venv site-packages, survives
 # the COPY --from=builder /build/.venv → /opt/ic-engine/.venv hop. Editable
 # (-e) would leave a venv .pth pointing at /build/bridge, which doesn't
 # exist in the runtime stage.
-# WITH deps: fastapi, uvicorn, mcp, httpx, sqlalchemy, aiosqlite, pydantic,
-# structlog from the bridge's pyproject.toml. Without these, serve.py
-# import-fails.
 RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install --python /build/.venv/bin/python /build/bridge
+
+RUN set -ex; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip uninstall \
+        --python /build/.venv/bin/python \
+        pymupdf premailer cssutils encutils frozendict || true; \
+    cp -r /build/bridge/frozendict_shim /build/.venv/lib/python3.12/site-packages/frozendict; \
+    /build/.venv/bin/python -c "from frozendict import frozendict; d=frozendict(a=1); h=hash(d); assert d['a']==1; print('frozendict shim ok, hash:', h)"; \
+    echo "verifying GPL/LGPL strip..."; \
+    /build/.venv/bin/python -c "import importlib.metadata as md; banned={'pymupdf','premailer','cssutils','encutils'}; found=[d.metadata['Name'] for d in md.distributions() if (d.metadata['Name'] or '').lower() in banned]; assert not found, f'still installed: {found}'; print('GPL/LGPL packages absent: pymupdf premailer cssutils encutils')"
 
 # ============================================================================
 # Stage 2: runtime — minimal image with venv + bridge + dashboard

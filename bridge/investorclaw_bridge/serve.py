@@ -97,8 +97,8 @@ def main() -> int:
         mcp_bind=mcp_bind,
         dashboard_bind=dashboard_bind,
         mnemos_base=mnemos_base,
-        ic_engine_db=os.environ.get("IC_ENGINE_DB", "/data/ic-engine.db"),
         portfolio_dir=os.environ.get("IC_PORTFOLIO_DIR", "/data/portfolios"),
+        engine_portfolio_dir=os.environ.get("INVESTOR_CLAW_PORTFOLIO_DIR", "(unset)"),
     )
 
     # ── Build the dashboard FastAPI app ────────────────────────────────
