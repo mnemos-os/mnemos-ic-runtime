@@ -125,16 +125,20 @@ def main() -> int:
         )
 
     # ── Build the MCP-HTTP app ────────────────────────────────────────
-    # FastMCP exposes its own ASGI app; we mount it at /mcp.
+    # FastMCP exposes its own ASGI app via streamable_http_app(), but the
+    # session manager inside it must be started via an async context
+    # manager (`session_manager.run()`) — wired through FastAPI's lifespan
+    # parameter. Mounting without the lifespan gives:
+    #   RuntimeError: Task group is not initialized. Make sure to use run().
+    # See FastMCP docs for the canonical lifespan-mount pattern.
+    from contextlib import asynccontextmanager
+
     if FastMCP is not None:
         mcp_app = FastMCP("investorclaw")
         mcp_server.register_tools(mcp_app)
-        # FastMCP's HTTP transport: bind via streamable_http_app() if available
-        # (depends on mcp package version — surface is in flux).
         try:
             mcp_asgi = mcp_app.streamable_http_app()
         except AttributeError:
-            # Older mcp package — try sse_app() fallback
             try:
                 mcp_asgi = mcp_app.sse_app()
             except AttributeError:
@@ -142,19 +146,36 @@ def main() -> int:
                     "bridge.mcp_transport_unavailable",
                     note="FastMCP installed but no HTTP/SSE transport found; check mcp package version",
                 )
+                mcp_app = None
                 mcp_asgi = None
     else:
+        mcp_app = None
         mcp_asgi = None
 
-    # Mount MCP at /mcp on the MCP-bound app (different port from dashboard)
-    mcp_app_root = FastAPI(title="InvestorClaw MCP", version="4.0.0a1")
+    @asynccontextmanager
+    async def mcp_lifespan(app):
+        if mcp_app is not None and hasattr(mcp_app, "session_manager"):
+            async with mcp_app.session_manager.run():
+                yield
+        else:
+            yield
+
+    # MCP-bound FastAPI app — mounts FastMCP at root so the inner /mcp path
+    # becomes /mcp on the agent's URL. /healthz lives at root alongside.
+    mcp_app_root = FastAPI(
+        title="InvestorClaw MCP",
+        version="4.0.0a1",
+        lifespan=mcp_lifespan,
+    )
 
     @mcp_app_root.get("/healthz")
     async def mcp_healthz() -> JSONResponse:
         return JSONResponse(mcp_server.health_check())
 
     if mcp_asgi is not None:
-        mcp_app_root.mount("/mcp", mcp_asgi, name="mcp")
+        # Mount at root: FastMCP's internal /mcp path becomes the public /mcp.
+        # This is the canonical path agents expect (see RFC §6.2 transport=http).
+        mcp_app_root.mount("/", mcp_asgi)
     else:
         @mcp_app_root.get("/mcp")
         async def mcp_placeholder() -> JSONResponse:

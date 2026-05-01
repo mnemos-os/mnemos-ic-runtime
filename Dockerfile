@@ -31,9 +31,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git \
     && rm -rf /var/lib/apt/lists/*
 
+# UV_INSTALL_DIR=/usr/local/bin tells the installer to drop uv directly there;
+# no follow-up symlink needed (and creating one fails because uv already exists).
 ENV UV_INSTALL_DIR=/usr/local/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && ln -s /root/.local/bin/uv /usr/local/bin/uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
 
 # Clone ic-engine source at the pinned ref
 WORKDIR /build
@@ -49,7 +50,14 @@ RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv sync --python 3.12 --frozen \
 # These live in this repo (mnemos-os/mnemos-ic-runtime) at /bridge
 COPY bridge/ /build/bridge/
 COPY dashboard/ /build/dashboard/
-RUN UV_PROJECT_ENVIRONMENT=/build/.venv /build/.venv/bin/pip install --no-deps -e /build/bridge
+# Non-editable install: bridge code lands in venv site-packages, survives
+# the COPY --from=builder /build/.venv → /opt/ic-engine/.venv hop. Editable
+# (-e) would leave a venv .pth pointing at /build/bridge, which doesn't
+# exist in the runtime stage.
+# WITH deps: fastapi, uvicorn, mcp, httpx, sqlalchemy, aiosqlite, pydantic,
+# structlog from the bridge's pyproject.toml. Without these, serve.py
+# import-fails.
+RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install --python /build/.venv/bin/python /build/bridge
 
 # ============================================================================
 # Stage 2: runtime — minimal image with venv + bridge + dashboard
