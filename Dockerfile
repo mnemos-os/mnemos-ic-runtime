@@ -81,6 +81,16 @@ COPY --from=builder --chown=ic:ic /build/ic-engine /opt/ic-engine/source
 COPY --from=builder --chown=ic:ic /build/bridge /opt/ic-engine/bridge
 COPY --from=builder --chown=ic:ic /build/dashboard /opt/ic-engine/dashboard
 
+# Rewrite venv shebangs from /build/.venv → /opt/ic-engine/.venv so console
+# scripts (investorclaw, investorclaw-bridge, etc.) execve cleanly. uv-built
+# venvs hardcode absolute shebangs at install time; the COPY across stages
+# leaves them pointing at the build-stage path that no longer exists in the
+# runtime image. Without this, `exec investorclaw` fails with ENOENT despite
+# the binary itself being present.
+RUN find /opt/ic-engine/.venv/bin -type f -exec \
+        sed -i '1s|^#!/build/.venv/bin/python.*|#!/opt/ic-engine/.venv/bin/python|' {} \; \
+ && /opt/ic-engine/.venv/bin/python -c "import sys; print('venv ok:', sys.executable)"
+
 # /data is the canonical mount point for compose volume
 RUN mkdir -p /data/portfolios /data/reports && chown -R ic:ic /data
 
