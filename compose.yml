@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: MIT
+# InvestorClaw 4.0 — canonical compose file
+# Distributed as MIT-licensed; the substantive container code is Apache 2.0.
+# Drop-in for: docker compose -f https://get.investorclaw.app/v4.0/compose.yml up -d
+#
+# ┌─ Tooling that reads this file ────────────────────────────────────┐
+# │  docker compose / podman-compose: ignores `x-*` keys, brings up  │
+# │    the `services` block.                                         │
+# │  zeroclaw services install <url>: parses x-mcp-services + writes │
+# │    the agent's MCP config natively (no shellout).                │
+# │  Other agents (Claude Code, openclaw, hermes via terminal tool): │
+# │    follow install.yaml steps that read the same x-* keys.        │
+# └──────────────────────────────────────────────────────────────────┘
+
+x-mcp-services:
+  investorclaw:
+    transport: http
+    url: http://127.0.0.1:8090/mcp
+    description: "InvestorClaw — portfolio analysis, FINOS CDM 5.x, deterministic engine"
+    health: http://127.0.0.1:8090/healthz
+  mnemos:
+    transport: http
+    url: http://127.0.0.1:5002/mcp
+    description: "Mnemos — memory + knowledge graph"
+    health: http://127.0.0.1:5002/healthz
+
+x-mcp-service-meta:
+  spec: "compose-x-mcp-services/v1"
+  version: "4.0"
+  bundle_url: https://get.investorclaw.app/v4.0/install.yaml
+  skill_url: https://get.investorclaw.app/v4.0/skill.md
+  dashboard_url: http://127.0.0.1:8092/
+  required_keys: []
+  optional_keys:
+    - { name: TOGETHER_API_KEY, purpose: "narrative LLM (recommended)" }
+    - { name: FINNHUB_KEY,      purpose: "real-time quotes + analyst ratings" }
+    - { name: FRED_API_KEY,     purpose: "Treasury / TIPS yield curves" }
+    - { name: NEWSAPI_KEY,      purpose: "news correlation" }
+    - { name: ALPHA_VANTAGE_KEY, purpose: "supplemental price data" }
+    - { name: OPENAI_API_KEY,   purpose: "alternative narrative LLM" }
+    - { name: GOOGLE_API_KEY,   purpose: "alternative narrative LLM (Gemini)" }
+  preferred_agents:
+    - claude     # Tier-1: Claude Code (marketplace) or Claude Desktop
+    - zeroclaw   # Tier-1: zeroclaw on master ([mcp] config support)
+  supported_agents:
+    - openclaw   # Tier-2: openclaw 4.29-beta.4+
+    - hermes     # Tier-2: hermes 0.12+
+
+services:
+  mnemos:
+    image: mnemos-os/mnemos-rs:4.2
+    container_name: investorclaw-mnemos
+    restart: unless-stopped
+    volumes:
+      - investorclaw-data:/data
+    ports:
+      - "127.0.0.1:5002:5002"   # localhost-only by default; override for remote deploys
+    environment:
+      MNEMOS_DB: /data/mnemos.db
+      MNEMOS_BIND: 0.0.0.0:5002
+      # MNEMOS_AUTH_TOKEN: <set for remote deploys; pulled from /data/keys.env>
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:5002/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  ic-engine:
+    image: mnemos-os/ic-engine:4.0
+    container_name: investorclaw-ic-engine
+    restart: unless-stopped
+    depends_on:
+      mnemos:
+        condition: service_healthy
+    volumes:
+      - investorclaw-data:/data
+    ports:
+      - "127.0.0.1:8090:8090"   # MCP-HTTP
+      - "127.0.0.1:8092:8092"   # Dashboard web UI
+    environment:
+      IC_ENGINE_DB: /data/ic-engine.db
+      IC_PORTFOLIO_DIR: /data/portfolios
+      IC_REPORTS_DIR: /data/reports
+      IC_KEYS_FILE: /data/keys.env
+      IC_MCP_BIND: 0.0.0.0:8090
+      IC_DASHBOARD_BIND: 0.0.0.0:8092
+      MNEMOS_BASE: http://mnemos:5002
+      # IC_MCP_AUTH_TOKEN: <set for remote deploys>
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8090/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s    # ic-engine first-start needs longer for sqlite init + uv venv ready
+
+volumes:
+  investorclaw-data:
+    name: investorclaw-data
+    driver: local

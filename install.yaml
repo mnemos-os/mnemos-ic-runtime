@@ -1,0 +1,164 @@
+# SPDX-License-Identifier: MIT
+# InvestorClaw 4.0 — install spec for shell-tool agents
+# (derived view of compose.yml's x-mcp-services + x-mcp-service-meta keys)
+#
+# Agents with native Docker integration (zeroclaw on master) should use
+# `zeroclaw services install <compose-url>` instead of walking these steps.
+#
+# Agents that drive shell + Edit tools (Claude Code, Claude Desktop with
+# computer-use, openclaw, hermes) walk this YAML linearly — request user
+# permission per step, execute via shell, report back.
+
+version: "4.0"
+spec: "compose-x-mcp-services-install/v1"
+target_compose: https://get.investorclaw.app/v4.0/compose.yml
+dashboard_url: http://127.0.0.1:8092/
+preferred_agents: [claude, zeroclaw]
+supported_agents: [openclaw, hermes]
+
+prerequisites:
+  - id: docker
+    check: ["docker", "--version"]
+    install_hint:
+      darwin: "brew install --cask docker  # opens Docker Desktop installer"
+      linux: "curl -fsSL https://get.docker.com | sh  # OR: apt-get install docker.io docker-compose-plugin"
+      windows: "winget install Docker.DockerDesktop"
+    failure_action: "report_to_user"   # don't auto-install; ask the user
+
+steps:
+  - id: stage_compose
+    description: "Fetch the canonical compose.yml from get.investorclaw.app"
+    cmd:
+      - "mkdir -p ~/.investorclaw"
+      - "curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml"
+    expected_artifact: "~/.investorclaw/compose.yml"
+
+  - id: bring_up
+    description: "Start mnemos + ic-engine containers"
+    cmd:
+      - "cd ~/.investorclaw && docker compose up -d"
+    wait_for:
+      - url: http://127.0.0.1:5002/healthz
+        timeout_sec: 30
+      - url: http://127.0.0.1:8090/healthz
+        timeout_sec: 60   # ic-engine needs longer first-start (sqlite init)
+
+  - id: configure_agent
+    description: "Add MCP server config to the agent runtime"
+    # Per-agent block — execution layer picks based on which agent is running this install.
+    agent_config:
+      claude_desktop:
+        platform_paths:
+          darwin: "${HOME}/Library/Application Support/Claude/claude_desktop_config.json"
+          linux: "${HOME}/.config/Claude/claude_desktop_config.json"
+          windows: "${APPDATA}/Claude/claude_desktop_config.json"
+        format: json
+        merge:
+          mcpServers:
+            investorclaw:
+              transport: http
+              url: http://127.0.0.1:8090/mcp
+            mnemos:
+              transport: http
+              url: http://127.0.0.1:5002/mcp
+        post_action: "Restart Claude Desktop to load new MCP servers"
+
+      claude_code:
+        platform_paths:
+          darwin: "${HOME}/Library/Application Support/Claude/claude_desktop_config.json"
+          linux: "${HOME}/.config/Claude/claude_desktop_config.json"
+          windows: "${APPDATA}/Claude/claude_desktop_config.json"
+        format: json
+        merge:
+          mcpServers:
+            investorclaw:
+              transport: http
+              url: http://127.0.0.1:8090/mcp
+            mnemos:
+              transport: http
+              url: http://127.0.0.1:5002/mcp
+        post_action: "MCP servers reload on next /mcp command or session restart"
+
+      zeroclaw:
+        platform_paths:
+          all: "${HOME}/.zeroclaw/config.toml"
+        format: toml
+        merge:
+          mcp.servers.investorclaw:
+            transport: http
+            url: http://127.0.0.1:8090/mcp
+          mcp.servers.mnemos:
+            transport: http
+            url: http://127.0.0.1:5002/mcp
+        post_action: "Run `zeroclaw config validate` to confirm; restart any running zeroclaw agent loop"
+        notes: "Requires zeroclaw current master (NOT 0.7.3 demo image — it lacks [mcp] config support)"
+
+      openclaw:
+        platform_paths:
+          all: "${HOME}/.openclaw/openclaw.json"
+        format: json
+        # openclaw 4.29-beta.4 has an active config-health daemon — use the validated CLI path:
+        cli_alternative:
+          - "openclaw mcp set --name investorclaw --transport http --url http://127.0.0.1:8090/mcp"
+          - "openclaw mcp set --name mnemos --transport http --url http://127.0.0.1:5002/mcp"
+        merge:
+          mcp:
+            servers:
+              investorclaw:
+                transport: http
+                url: http://127.0.0.1:8090/mcp
+              mnemos:
+                transport: http
+                url: http://127.0.0.1:5002/mcp
+        post_action: "Restart openclaw container or `openclaw config reload`"
+        notes: "Prefer the CLI form (cli_alternative) over direct file edit on 4.29-beta.4 — config-health daemon clobbers raw JSON writes lacking required fields"
+
+      hermes:
+        platform_paths:
+          all: "${HOME}/.hermes/config.yaml"
+        format: yaml
+        merge:
+          mcp_servers:
+            investorclaw:
+              transport: http
+              url: http://127.0.0.1:8090/mcp
+            mnemos:
+              transport: http
+              url: http://127.0.0.1:5002/mcp
+        post_action: "Restart hermes if running"
+
+  - id: open_dashboard
+    description: "Point the user at the dashboard for portfolio upload + key config"
+    cmd:
+      darwin: "open http://127.0.0.1:8092/"
+      linux: "xdg-open http://127.0.0.1:8092/"
+      windows: "start http://127.0.0.1:8092/"
+    fallback_message: |
+      Open this URL in your browser to upload a portfolio CSV/xls and
+      configure your API keys (Together, Finnhub, FRED, etc.):
+
+        http://127.0.0.1:8092/
+
+post_install:
+  next_steps:
+    - "Drop a portfolio CSV/xls into the dashboard at http://127.0.0.1:8092/"
+    - "Add at least your Together AI key (or another LLM provider) for narrative synthesis"
+    - "Try a query through your agent: \"What's in my portfolio?\""
+
+verify:
+  - description: "Both MCP servers are healthy"
+    checks:
+      - url: http://127.0.0.1:8090/healthz
+      - url: http://127.0.0.1:5002/healthz
+  - description: "Dashboard responds"
+    checks:
+      - url: http://127.0.0.1:8092/
+
+uninstall:
+  cmd:
+    - "cd ~/.investorclaw && docker compose down -v"
+    - "# Note: -v removes the data volume (portfolios, memories, keys). Omit to preserve data."
+    - "rm -rf ~/.investorclaw"
+  agent_config_cleanup:
+    - "Remove `investorclaw` and `mnemos` entries from your agent's MCP server config"
+    - "Restart the agent to clear the MCP server cache"
