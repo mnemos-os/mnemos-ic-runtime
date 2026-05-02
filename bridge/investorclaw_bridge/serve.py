@@ -229,6 +229,11 @@ def main() -> int:
     async def mcp_healthz() -> JSONResponse:
         return JSONResponse(mcp_server.health_check())
 
+    # Register REST wrappers BEFORE the FastMCP mount; FastAPI route
+    # resolution prefers explicitly-registered routes over mounted apps,
+    # so /api/portfolio/* takes precedence over the FastMCP catch-all.
+    mcp_server.register_rest_routes(mcp_app_root)
+
     if mcp_asgi is not None:
         # Mount at root: FastMCP's internal /mcp path becomes the public /mcp.
         # This is the canonical path agents expect (see RFC §6.2 transport=http).

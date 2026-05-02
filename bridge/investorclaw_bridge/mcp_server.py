@@ -329,6 +329,94 @@ def register_tools(app) -> None:
     )
 
 
+def register_rest_routes(app: Any) -> None:
+    """Register plain-HTTP REST wrappers for the 4 v4.0 tools on a FastAPI app.
+
+    Mirrors register_tools() but exposes the same tool functions as
+    `POST /api/portfolio/<verb>` endpoints. Lets agents call ic-engine via
+    `curl` / shell-tool / fetch without going through the MCP handshake.
+
+    Required by: agent runtimes whose native MCP client integration is
+    incomplete or quirky in current releases (e.g., zeroclaw v0.7.4 registers
+    MCP tools internally but doesn't expose them to the LLM tool registry;
+    hermes' `mcp add` requires a TTY). Plain REST works because every agent
+    has a `shell`/`process`/`web_fetch` builtin that can issue an HTTP POST.
+
+    The bridge also exposes the same surface via MCP (see register_tools).
+    Both paths invoke the same underlying _run_ic_engine subprocess; they're
+    just different transports for the same tool contract.
+    """
+    from fastapi import HTTPException
+    from pydantic import BaseModel
+
+    class AskBody(BaseModel):
+        question: str
+
+    @app.post("/api/portfolio/ask")
+    async def rest_portfolio_ask(body: AskBody) -> dict[str, Any]:
+        if not body.question:
+            raise HTTPException(status_code=400, detail="question is required")
+        return await _run_ic_engine(["ask", body.question])
+
+    @app.post("/api/portfolio/holdings")
+    async def rest_portfolio_holdings() -> dict[str, Any]:
+        return await _run_ic_engine(
+            ["ask", "What is in my portfolio? Show me holdings, values, and weights."]
+        )
+
+    @app.post("/api/portfolio/refresh")
+    async def rest_portfolio_refresh() -> dict[str, Any]:
+        return await _run_ic_engine(["refresh"])
+
+    @app.post("/api/portfolio/setup")
+    async def rest_portfolio_setup() -> dict[str, Any]:
+        return await _run_ic_engine(["ask", "List the portfolio files in /data/portfolios. Run setup if any are unconfigured."])
+
+    @app.get("/api/portfolio/tools")
+    async def rest_portfolio_tools() -> dict[str, Any]:
+        """Self-describing tool catalog — agents can curl this to discover endpoints."""
+        return {
+            "tools": [
+                {
+                    "name": "portfolio_ask",
+                    "method": "POST",
+                    "path": "/api/portfolio/ask",
+                    "body": {"question": "string"},
+                    "description": "Natural-language portfolio question. Routes to the right ic-engine analysis.",
+                },
+                {
+                    "name": "portfolio_holdings",
+                    "method": "POST",
+                    "path": "/api/portfolio/holdings",
+                    "body": {},
+                    "description": "Current holdings snapshot — positions, values, weights, account hierarchy.",
+                },
+                {
+                    "name": "portfolio_refresh",
+                    "method": "POST",
+                    "path": "/api/portfolio/refresh",
+                    "body": {},
+                    "description": "Refresh market data via yfinance/FRED/Finnhub.",
+                },
+                {
+                    "name": "portfolio_setup",
+                    "method": "POST",
+                    "path": "/api/portfolio/setup",
+                    "body": {},
+                    "description": "Scan /data/portfolios for files and report setup state.",
+                },
+            ]
+        }
+
+    logger.info(
+        "mcp.rest_routes.registered",
+        endpoints=["/api/portfolio/ask", "/api/portfolio/holdings",
+                   "/api/portfolio/refresh", "/api/portfolio/setup",
+                   "/api/portfolio/tools"],
+    )
+
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Health endpoints (lifted into the FastAPI app by serve.py)
 # ──────────────────────────────────────────────────────────────────────
