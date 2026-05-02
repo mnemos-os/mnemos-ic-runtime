@@ -185,6 +185,38 @@ RUN set -ex; \
     /build/.venv/bin/python -c "import ic_engine.commands.optimize; print('optimize import ok (matplotlib lazy)')"; \
     /build/.venv/bin/python -c "import ic_engine; print('ic_engine ok')"
 
+# Pass 5 (post v4.0.1 trim): orphans-not-caught-earlier + tests/ directories.
+#
+#   sqlalchemy (14 MB)  Not used by ic_engine or bridge anywhere
+#                       (greppable: zero hits on `sqlalchemy` and `sqlite3`
+#                       in ic_engine/ and bridge/). Must have been pulled
+#                       in by an earlier dep that's since been stripped
+#                       (likely litellm or transformers). Drop.
+#   networkx (8 MB)     Same — zero ic_engine import hits, zero reverse-
+#                       deps still installed after the litellm/torch strip.
+#   {pandas,pyarrow,scipy,numpy}/tests/  Test fixtures shipped inside
+#                       the wheels. Never invoked at runtime. Adds up to
+#                       ~43 MB across the four packages. Removing them
+#                       only breaks `pytest path/to/wheel`, not the libs.
+#
+# Note: uvloop (16 MB) is intentionally NOT stripped — uvicorn (FastMCP's
+# HTTP transport) declares it as a soft dep and prefers it when present.
+# Falling back to asyncio's default loop works but is a measurable perf
+# hit on event-loop-heavy workloads. Revisit if/when we move FastMCP to
+# a different transport.
+RUN set -ex; \
+    PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
+       | /usr/local/bin/python3 -c "import json, sys; dead={'sqlalchemy','networkx'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in dead))"); \
+    echo "stripping orphan deps: $PKGS"; \
+    UV_PROJECT_ENVIRONMENT=/build/.venv uv pip uninstall --python /build/.venv/bin/python $PKGS || true; \
+    echo "stripping tests/ from heavy packages..."; \
+    for pkg in pandas pyarrow scipy numpy; do \
+        find /build/.venv/lib/python3.12/site-packages/$pkg \
+            -type d -name tests -prune -exec rm -rf {} + 2>/dev/null || true; \
+    done; \
+    echo "verifying ic-engine + heavy deps still importable..."; \
+    /build/.venv/bin/python -c "import ic_engine; import polars; import pandas; import scipy; import numpy; import pyarrow; print('imports ok: ic_engine + polars + pandas + scipy + numpy + pyarrow')"
+
 # ============================================================================
 # Stage 2: runtime — minimal image with venv + bridge + dashboard
 # ============================================================================
