@@ -45,6 +45,18 @@ PORTFOLIO_DIR = Path(os.environ.get("IC_PORTFOLIO_DIR", "/data/portfolios"))
 REPORTS_DIR = Path(os.environ.get("IC_REPORTS_DIR", "/data/reports"))
 KEYS_FILE = Path(os.environ.get("IC_KEYS_FILE", "/data/keys.env"))
 
+# yfinance writes session cookies + ticker-tz cache to ~/.cache/py-yfinance/
+# inside the container (Docker user `ic`, uid 1000). Once Yahoo's anti-bot
+# rate-limits a session, the cookie carries the backoff state, and *every*
+# subsequent ic-engine subprocess (which re-imports yfinance fresh) inherits
+# the lockout — even though `proc.terminate()` killed the orphan. Result is
+# a hard cascade: every prompt past the first yfinance-rate-limit hit times
+# out at 240s for the rest of the session. Clearing this dir on timeout
+# makes the next subprocess look like a brand-new yfinance session.
+# Discovered during 2026-05-02 v4 30-prompt barrage on 4.0.2-cpu (10/10
+# cascade hit on p21-p30 after p21-deflect-market triggered the rate limit).
+YF_CACHE_DIR = Path(os.environ.get("YF_CACHE_DIR", "/home/ic/.cache/py-yfinance"))
+
 
 # Provider key map — translates per-provider key env vars (set by the
 # operator in /data/keys.env) into the ic-engine narrative env contract.
@@ -85,6 +97,22 @@ def _resolve_narrative_api_key() -> str | None:
 
 class IcEngineError(Exception):
     """Raised when the ic-engine subprocess exits non-zero."""
+
+
+def _clear_yfinance_cache() -> None:
+    """Delete the yfinance per-user cache directory, if it exists.
+
+    Called from the subprocess-reap path on TimeoutError to break the
+    rate-limit-cookie cascade (see YF_CACHE_DIR comment above). Safe to
+    call when the dir does not exist or is partially written — `rmtree`
+    with ignore_errors=True swallows ENOENT and EACCES.
+    """
+    try:
+        shutil.rmtree(YF_CACHE_DIR, ignore_errors=True)
+        logger.info("mcp.yf_cache.cleared", path=str(YF_CACHE_DIR))
+    except Exception as exc:
+        # Should never fire (ignore_errors=True), but log if it does.
+        logger.warning("mcp.yf_cache.clear_failed", path=str(YF_CACHE_DIR), error=str(exc))
 
 
 async def _run_ic_engine(
@@ -168,6 +196,11 @@ async def _run_ic_engine(
                     await proc.wait()
             except ProcessLookupError:
                 pass
+        if timed_out:
+            # Yahoo Finance rate-limit cookies survive subprocess reap.
+            # Clear them so the next ic-engine subprocess starts fresh and
+            # doesn't immediately hit the same backoff window.
+            _clear_yfinance_cache()
         raise
     finally:
         # Belt-and-suspenders: catch the case where we returned successfully
