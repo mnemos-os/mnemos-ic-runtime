@@ -276,7 +276,15 @@ def register_tools(app) -> None:
             `exit_code`. ic_result may be None if the engine returned
             a deflection.
         """
-        result = await _run_ic_engine(["ask", question])
+        # --no-refresh: use the cached envelope deterministically. The default
+        # ic-engine ask path refreshes stale sections (news TTL=30s) on every call,
+        # which hits external APIs and produces 60-300s variance per ask call within
+        # a multi-prompt session. Callers who want fresh data should invoke
+        # portfolio_refresh explicitly; ask should never block on a background
+        # refresh that the operator did not ask for. Discovered during 2026-05-02
+        # v4-30 barrage on 4.0.6 (28/30 with 1-2 timeout fails on calls that
+        # happened to land after news TTL expired).
+        result = await _run_ic_engine(["ask", "--no-refresh", question])
         return result
 
     @app.tool()
@@ -291,7 +299,7 @@ def register_tools(app) -> None:
             dict with structured holdings data + narrative body.
         """
         result = await _run_ic_engine(
-            ["ask", "What is in my portfolio? Show me holdings, values, and weights."]
+            ["ask", "--no-refresh", "What is in my portfolio? Show me holdings, values, and weights."]
         )
         return result
 
@@ -356,12 +364,12 @@ def register_rest_routes(app: Any) -> None:
     async def rest_portfolio_ask(body: AskBody) -> dict[str, Any]:
         if not body.question:
             raise HTTPException(status_code=400, detail="question is required")
-        return await _run_ic_engine(["ask", body.question])
+        return await _run_ic_engine(["ask", "--no-refresh", body.question])
 
     @app.post("/api/portfolio/holdings")
     async def rest_portfolio_holdings() -> dict[str, Any]:
         return await _run_ic_engine(
-            ["ask", "What is in my portfolio? Show me holdings, values, and weights."]
+            ["ask", "--no-refresh", "What is in my portfolio? Show me holdings, values, and weights."]
         )
 
     @app.post("/api/portfolio/refresh")
@@ -370,7 +378,7 @@ def register_rest_routes(app: Any) -> None:
 
     @app.post("/api/portfolio/setup")
     async def rest_portfolio_setup() -> dict[str, Any]:
-        return await _run_ic_engine(["ask", "List the portfolio files in /data/portfolios. Run setup if any are unconfigured."])
+        return await _run_ic_engine(["ask", "--no-refresh", "List the portfolio files in /data/portfolios. Run setup if any are unconfigured."])
 
     @app.get("/api/portfolio/tools")
     async def rest_portfolio_tools() -> dict[str, Any]:
