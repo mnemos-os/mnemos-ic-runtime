@@ -354,14 +354,14 @@ def register_rest_routes(app: Any) -> None:
     Both paths invoke the same underlying _run_ic_engine subprocess; they're
     just different transports for the same tool contract.
     """
-    from fastapi import HTTPException
+    from fastapi import HTTPException, Body
     from pydantic import BaseModel
 
     class AskBody(BaseModel):
         question: str
 
     @app.post("/api/portfolio/ask")
-    async def rest_portfolio_ask(body: AskBody) -> dict[str, Any]:
+    async def rest_portfolio_ask(body: AskBody = Body(...)) -> dict[str, Any]:
         if not body.question:
             raise HTTPException(status_code=400, detail="question is required")
         return await _run_ic_engine(["ask", "--no-refresh", body.question])
