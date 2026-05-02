@@ -6,7 +6,7 @@
 #
 # What's in this container:
 #   - Python 3.12 + uv-managed venv
-#   - perlowja/InvestorClaw ic-engine pinned to a specific SHA (set via build arg)
+#   - argonautsystems/ic-engine pinned to a specific SHA (set via build arg)
 #   - FastMCP server at :8090
 #   - Dashboard static files served at :8092
 #   - MnemosClient (HTTP client to mnemos-rs at $MNEMOS_BASE)
@@ -23,8 +23,10 @@ FROM python:3.12-slim AS builder
 
 # Pinning ic-engine to a specific SHA (set via --build-arg).
 # Default fills in at build time; production builds should pin explicitly.
-ARG IC_ENGINE_REF=v2.6.3
-ARG IC_ENGINE_REPO=https://github.com/perlowja/InvestorClaw.git
+# Repo migrated from perlowja/InvestorClaw → argonautsystems/ic-engine
+# (org migration completed in v2.5.1; commit 729dd5d on master).
+ARG IC_ENGINE_REF=feat/priceprovider-history-massive-2026-05-01
+ARG IC_ENGINE_REPO=https://gitlab.com/argonautsystems/ic-engine.git
 
 # uv install (canonical Python toolchain per project policy)
 RUN apt-get update && apt-get install -y --no-install-recommends \
