@@ -1,100 +1,72 @@
 # SPDX-License-Identifier: MIT
-# InvestorClaw 4.0 — canonical compose file
-# Distributed as MIT-licensed; the substantive container code is Apache 2.0.
-# Drop-in for: docker compose -f https://get.investorclaw.app/v4.0/compose.yml up -d
-#
-# ┌─ Tooling that reads this file ────────────────────────────────────┐
-# │  docker compose / podman-compose: ignores `x-*` keys, brings up  │
-# │    the `services` block.                                         │
-# │  zeroclaw services install <url>: parses x-mcp-services + writes │
-# │    the agent's MCP config natively (no shellout).                │
-# │  Other agents (Claude Code, openclaw, hermes via terminal tool): │
-# │    follow install.yaml steps that read the same x-* keys.        │
-# └──────────────────────────────────────────────────────────────────┘
+# InvestorClaw v4.0 — dockerized-skill convention compose
+# Spec: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/RFC.md
+# Skill: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
+
+# x-* extension keys are ignored by Docker Compose itself (so this file
+# runs cleanly with `docker compose up`), but install tools that
+# implement the compose-x-mcp-services convention read these keys to
+# wire the MCP server registration into the agent's config.
 
 x-mcp-services:
-  investorclaw:
-    transport: http
-    url: http://127.0.0.1:8090/mcp
-    description: "InvestorClaw — portfolio analysis, FINOS CDM 5.x, deterministic engine"
-    health: http://127.0.0.1:8090/healthz
-  mnemos:
-    transport: http
-    url: http://127.0.0.1:5002/mcp
-    description: "Mnemos — memory + knowledge graph"
-    health: http://127.0.0.1:5002/healthz
+  ic-engine:
+    transport: streamable-http
+    url: http://127.0.0.1:18090/mcp
+    description: "Portfolio analysis (deterministic, FINOS CDM 5.x compliant)"
+    health: http://127.0.0.1:18090/healthz
 
 x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
-  version: "4.0"
-  bundle_url: https://get.investorclaw.app/v4.0/install.yaml
-  skill_url: https://get.investorclaw.app/v4.0/skill.md
-  dashboard_url: http://127.0.0.1:8092/
+  version: "4.0.9"
+  dashboard_url: http://127.0.0.1:18092/
+  skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
   required_keys: []
   optional_keys:
-    - { name: TOGETHER_API_KEY, purpose: "narrative LLM (recommended)" }
-    - { name: FINNHUB_KEY,      purpose: "real-time quotes + analyst ratings" }
-    - { name: FRED_API_KEY,     purpose: "Treasury / TIPS yield curves" }
+    - { name: TOGETHER_API_KEY, purpose: "narrative LLM (Together MiniMax-M2.7) — fleet default, cheapest tier" }
+    - { name: FINNHUB_KEY,      purpose: "real-time quotes" }
     - { name: NEWSAPI_KEY,      purpose: "news correlation" }
-    - { name: ALPHA_VANTAGE_KEY, purpose: "supplemental price data" }
-    - { name: OPENAI_API_KEY,   purpose: "alternative narrative LLM" }
-    - { name: GOOGLE_API_KEY,   purpose: "alternative narrative LLM (Gemini)" }
-  preferred_agents:
-    - claude     # Tier-1: Claude Code (marketplace) or Claude Desktop
-    - zeroclaw   # Tier-1: zeroclaw on master ([mcp] config support)
-  supported_agents:
-    - openclaw   # Tier-2: openclaw 4.29-beta.4+
-    - hermes     # Tier-2: hermes 0.12+
+    - { name: ALPHA_VANTAGE_KEY, purpose: "backup quote provider" }
+    - { name: FRED_API_KEY,     purpose: "FRED yield curve" }
+    - { name: MASSIVE_API_KEY,  purpose: "backup quote provider" }
+  preferred_agents: ["zeroclaw", "openclaw", "hermes", "claude-code"]
+  supported_agents: ["any MCP client", "any HTTP/REST client"]
 
 services:
-  mnemos:
-    image: mnemos-os/mnemos-rs:4.2
-    container_name: investorclaw-mnemos
-    restart: unless-stopped
-    volumes:
-      - investorclaw-data:/data
-    ports:
-      - "127.0.0.1:5002:5002"   # localhost-only by default; override for remote deploys
-    environment:
-      MNEMOS_DB: /data/mnemos.db
-      MNEMOS_BIND: 0.0.0.0:5002
-      # MNEMOS_AUTH_TOKEN: <set for remote deploys; pulled from /data/keys.env>
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:5002/healthz || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-
   ic-engine:
-    image: mnemos-os/ic-engine:4.0
-    container_name: investorclaw-ic-engine
+    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.0.9-cpu
+    container_name: ic-engine
     restart: unless-stopped
-    depends_on:
-      mnemos:
-        condition: service_healthy
-    volumes:
-      - investorclaw-data:/data
+
+    # MCP-HTTP at :18090/mcp + plain REST at :18090/api/portfolio/*
+    # Dashboard + healthz at :18092
+    # Both bind to 127.0.0.1 by default per RFC §8 — set IC_HOST to
+    # override (e.g., 0.0.0.0 for cross-host access; only do this behind
+    # nginx/Tailscale/Caddy with TLS termination).
     ports:
-      - "127.0.0.1:8090:8090"   # MCP-HTTP
-      - "127.0.0.1:8092:8092"   # Dashboard web UI
+      - "127.0.0.1:18090:8090"
+      - "127.0.0.1:18092:8092"
+
+    volumes:
+      # Persistent data — engine cache, reports, optional /data/keys.env.
+      - ic-engine-data:/data
+      # Drop broker exports (CSV/XLS/PDF) here on the host:
+      - ./portfolios:/data/portfolios
+
     environment:
-      IC_ENGINE_DB: /data/ic-engine.db
-      IC_PORTFOLIO_DIR: /data/portfolios
-      IC_REPORTS_DIR: /data/reports
-      IC_KEYS_FILE: /data/keys.env
-      IC_MCP_BIND: 0.0.0.0:8090
-      IC_DASHBOARD_BIND: 0.0.0.0:8092
-      MNEMOS_BASE: http://mnemos:5002
-      # IC_MCP_AUTH_TOKEN: <set for remote deploys>
+      # Fleet default: Together MiniMax-M2.7 for narrative synthesis.
+      # Engine works without these (degraded — stub narratives), but with
+      # an LLM key it produces real natural-language answers.
+      INVESTORCLAW_NARRATIVE_PROVIDER: openai_compat
+      INVESTORCLAW_NARRATIVE_ENDPOINT: https://api.together.xyz/v1
+      INVESTORCLAW_NARRATIVE_MODEL: MiniMaxAI/MiniMax-M2.7
+
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8090/healthz || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 30s    # ic-engine first-start needs longer for sqlite init
+      test: ["CMD", "curl", "-sf", "http://localhost:8090/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
-  investorclaw-data:
-    name: investorclaw-data
-    driver: local
+  ic-engine-data:
+    name: ic-engine-data
