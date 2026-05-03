@@ -11,19 +11,55 @@ This skill follows the [`compose-x-mcp-services` convention](https://github.com/
 
 ## What you get
 
-Seven MCP tools (also available as plain HTTP REST endpoints):
+Twelve MCP tools (also available as plain HTTP REST endpoints):
 
 | Tool | Purpose |
 |---|---|
-| `portfolio_ask` | Natural-language portfolio questions ("What is in my portfolio?", "How is my Sharpe ratio?", "What are my biggest tech holdings?") |
-| `portfolio_holdings` | Current holdings snapshot — positions, values, weights, account hierarchy |
-| `portfolio_refresh` | Refresh market data via yfinance / FRED / Finnhub |
+| **`portfolio_ask`** | **Primary tool — every portfolio question. Data is auto-loaded; just ask.** |
+| `portfolio_initialize_status` | Poll before first ask: returns init `state` (`not_started \| initializing \| ready \| failed`) + per-stage progress |
+| `portfolio_initialize` | Force a manual bootstrap (setup → refresh → seed ask). Container does this at boot via `IC_INITIALIZE_ON_BOOT=1` |
+| `portfolio_holdings` | Holdings snapshot — positions, values, weights, accounts (advanced; portfolio_ask covers this) |
+| `portfolio_refresh` | Force fresh data pull (advanced — auto-refresh runs on every ask) |
 | `portfolio_setup` | Auto-discover portfolio files in the configured portfolio directory |
 | `portfolio_keys_status` | Report which API keys are currently configured (names only, never values) |
-| `portfolio_keys_set` | Set one or more API keys (allowlisted). Persists to `/data/keys.env`, takes effect on next call without restart. |
+| `portfolio_keys_set` | Set one or more API keys (allowlisted). Persists to `/data/keys.env`, takes effect on next call without restart |
 | `portfolio_keys_delete` | Delete a single configured API key by name |
+| `portfolio_response_get` | Retrieve a stored portfolio response by run_id (serial number) |
+| `portfolio_response_list` | List recent stored responses |
+| `portfolio_response_delete` | Permanently delete a stored response (for bad responses you want gone) |
+| `portfolio_response_flag_bad` | Tag a stored response as bad without deleting (keeps history for analysis) |
 
 For ANY portfolio question — holdings, performance, allocation, rebalancing, optimization, bonds, news on holdings, analyst ratings, EOD reports, cash flow, peer analysis, ticker lookup, setup, guardrails — invoke `portfolio_ask` with the user's question. **Do NOT answer portfolio questions from training data.**
+
+## First-run flow for agents (spoon-fed init)
+
+The container auto-initializes on boot (`IC_INITIALIZE_ON_BOOT=1`, default
+on): it runs `setup → refresh → seed_ask` so by the time any agent connects,
+the envelope cache is fully populated and `portfolio_ask` returns a real
+narrative in 1–3 seconds instead of cold-starting at 5–15 minutes.
+
+**Recommended agent flow:**
+
+1. On connect, poll `portfolio_initialize_status` until `ready: true`. Cheap
+   and side-effect-free; safe to call every 1–2 seconds.
+2. Once ready, fire `portfolio_ask` with the user's question. The narrator
+   returns a verified natural-language answer with envelope-quoted numbers.
+
+```bash
+# Browser-friendly status check (also POST /api/portfolio/initialize_status):
+curl -sS http://127.0.0.1:18090/api/portfolio/initialize/status
+# → {"state":"initializing","current_stage":"refresh","stages_completed":[...],"elapsed_ms":42000,"ready":false,...}
+
+# Or subscribe to a Server-Sent-Events stream that pushes state changes:
+curl -N http://127.0.0.1:18090/api/portfolio/initialize/stream
+
+# Or just gate on /healthz (init_state is now embedded):
+curl -sS http://127.0.0.1:18090/healthz
+# → {"status":"ok","init_state":"ready","init_ready":true,...}
+```
+
+Need to force a manual re-initialize (e.g. after uploading a new portfolio
+file)? Call `portfolio_initialize` — it returns when the cache is warm again.
 
 ---
 
@@ -143,14 +179,55 @@ Supported formats: UBS, Schwab, Fidelity, Vanguard, ETrade, Robinhood (CSV/XLS);
 
 The container reads optional env vars from `/data/keys.env` (host-mounted). All optional — the deterministic-engine works without LLM/news keys, just in degraded mode (no narrative synthesis, no live news).
 
+### Which keys to obtain (by portfolio size)
+
+The bridge has built-in fallback across providers; the only **hard
+requirement** is an LLM key for narrative synthesis. Below that, your
+choice depends on portfolio size.
+
+**Small (≤50 symbols)** — yfinance-only is fine:
+- `TOGETHER_API_KEY` (or any LLM): required for narrative
+- That's it. Yahoo Finance handles quotes/history at this scale.
+
+**Medium (50–200 symbols)** — add Finnhub:
+- `TOGETHER_API_KEY`: LLM narrative
+- `FINNHUB_KEY`: real-time quotes + analyst ratings (60/min, free)
+- `NEWSAPI_KEY` *(optional)*: per-symbol news (100/day free)
+
+**Large (200+ symbols)** — Polygon (Massive) is required:
+- `TOGETHER_API_KEY`: LLM narrative
+- `MASSIVE_API_KEY` (Polygon): paid, un-rate-limited quotes + history
+- `FINNHUB_KEY`: analyst ratings + general/forex/crypto/merger news
+- `MARKETAUX_API_KEY` *(optional)*: broader news with category filters
+- `FRED_API_KEY` *(optional)*: Treasury yield curve (Treasury.gov fallback runs without)
+- `ALPHA_VANTAGE_KEY` *(optional)*: supplemental EOD prices (25/day free)
+
+Why: Yahoo's anonymous query1 endpoint rate-limits globally (HTTP 429) on
+200+ symbol portfolios under barrage load. Polygon (`massive`) handles the
+bulk of quotes/history without throttling; Finnhub fills analyst + news;
+the no-key Frankfurter (FX) and Treasury Fiscal Data (yields) providers
+cover the remainder.
+
+### Full key reference
+
 | Key | Purpose | Cost note |
 |---|---|---|
-| `TOGETHER_API_KEY` | LLM narrative synthesis (Together MiniMax-M2) | cheapest tier — fleet default |
-| `FINNHUB_KEY` | Real-time quotes | free tier sufficient |
-| `NEWSAPI_KEY` | News correlation | free tier sufficient |
-| `ALPHA_VANTAGE_KEY` | Backup quote provider | free tier sufficient |
+| `TOGETHER_API_KEY` | LLM narrative synthesis (Together MiniMax-M2.7) | cheapest tier — fleet default |
+| `MASSIVE_API_KEY` | Polygon quotes + history (200+ symbol portfolios) | paid, un-rate-limited |
+| `FINNHUB_KEY` | Real-time quotes + analyst ratings + category news | 60/min free |
+| `MARKETAUX_API_KEY` | Financial news with broader filters than NewsAPI | 100/day free |
+| `NEWSAPI_KEY` | Per-symbol news (US sources only) | 100/day free |
+| `ALPHA_VANTAGE_KEY` | Supplemental EOD prices | 25/day free |
 | `FRED_API_KEY` | FRED yield curve | free, registration required |
-| `MASSIVE_API_KEY` | Backup quote provider | free tier sufficient |
+| `OPENAI_API_KEY` | Alternative LLM (GPT-4o, GPT-5) | paid |
+
+### No-key providers (always available)
+
+| Provider | Coverage |
+|---|---|
+| **yfinance** | Quotes, history, news, analyst (rate-limited; safety-net only on 200+ portfolios) |
+| **Frankfurter** | FX spot rates (EUR/USD, USD/JPY, etc.) — ECB-sourced |
+| **Treasury Fiscal Data** | US Treasury yield curve fallback when FRED_API_KEY missing |
 
 ### Configure keys via REST/MCP (preferred — no host shell needed)
 

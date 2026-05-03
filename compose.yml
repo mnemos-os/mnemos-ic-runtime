@@ -17,7 +17,7 @@ x-mcp-services:
 
 x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
-  version: "4.1.6"
+  version: "4.1.8"
   dashboard_url: http://127.0.0.1:18092/
   skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
   required_keys: []
@@ -33,7 +33,7 @@ x-mcp-service-meta:
 
 services:
   ic-engine:
-    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.6-cpu
+    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.8-cpu
     container_name: ic-engine
     restart: unless-stopped
 
@@ -63,6 +63,10 @@ services:
       # MNEMOS persistence for portfolio_ask responses. Defaults point at
       # the fleet PYTHIA endpoint; override for self-hosted deployments.
       MNEMOS_BASE: http://192.168.207.67:5002
+      # Boot-time auto-initialize: container runs setup -> refresh -> seed
+      # ask 2s after listeners come up so the envelope cache is warm by
+      # the time any agent connects. Set to "0" to disable.
+      IC_INITIALIZE_ON_BOOT: "1"
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8090/healthz"]
