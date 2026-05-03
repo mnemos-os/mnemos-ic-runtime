@@ -17,12 +17,12 @@ x-mcp-services:
 
 x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
-  version: "4.0.9"
+  version: "4.1.0"
   dashboard_url: http://127.0.0.1:18092/
   skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
   required_keys: []
   optional_keys:
-    - { name: TOGETHER_API_KEY, purpose: "narrative LLM (Together MiniMax-M2.7) — fleet default, cheapest tier" }
+    - { name: TOGETHER_API_KEY, purpose: "narrative LLM (Together MiniMax-M2 — 1M context required for full-portfolio narration) — fleet default, cheapest tier" }
     - { name: FINNHUB_KEY,      purpose: "real-time quotes" }
     - { name: NEWSAPI_KEY,      purpose: "news correlation" }
     - { name: ALPHA_VANTAGE_KEY, purpose: "backup quote provider" }
@@ -33,7 +33,7 @@ x-mcp-service-meta:
 
 services:
   ic-engine:
-    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.0.9-cpu
+    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.0-cpu
     container_name: ic-engine
     restart: unless-stopped
 
@@ -53,12 +53,13 @@ services:
       - ./portfolios:/data/portfolios
 
     environment:
-      # Fleet default: Together MiniMax-M2.7 for narrative synthesis.
-      # Engine works without these (degraded — stub narratives), but with
-      # an LLM key it produces real natural-language answers.
+      # Fleet default: Together MiniMax-M2 (1M context — required for the
+      # narrator's full-envelope rendering on portfolios with hundreds of
+      # positions). Engine works without these (degraded — stub narratives),
+      # but with an LLM key it produces real natural-language answers.
       INVESTORCLAW_NARRATIVE_PROVIDER: openai_compat
       INVESTORCLAW_NARRATIVE_ENDPOINT: https://api.together.xyz/v1
-      INVESTORCLAW_NARRATIVE_MODEL: MiniMaxAI/MiniMax-M2.7
+      INVESTORCLAW_NARRATIVE_MODEL: MiniMaxAI/MiniMax-M2
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8090/healthz"]
