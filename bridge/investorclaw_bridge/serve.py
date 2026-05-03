@@ -236,7 +236,14 @@ def main() -> int:
 
     @mcp_app_root.get("/healthz")
     async def mcp_healthz() -> JSONResponse:
-        return JSONResponse(mcp_server.health_check())
+        from .mcp.tools import get_init_state as _get_init_state
+        h = mcp_server.health_check()
+        snap = _get_init_state()
+        h["init_state"] = snap["state"]
+        h["init_ready"] = snap["ready"]
+        h["init_current_stage"] = snap["current_stage"]
+        h["init_elapsed_ms"] = snap["elapsed_ms"]
+        return JSONResponse(h)
 
     # Register REST wrappers BEFORE the FastMCP mount; FastAPI route
     # resolution prefers explicitly-registered routes over mounted apps,
