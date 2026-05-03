@@ -82,7 +82,7 @@ def _clear_yfinance_cache() -> None:
 async def _run_ic_engine(
     args: list[str],
     *,
-    timeout_sec: float = 600.0,
+    timeout_sec: float = 1800.0,
 ) -> dict[str, Any]:
     """Run `investorclaw <args>` in a subprocess; return the parsed envelope.
 

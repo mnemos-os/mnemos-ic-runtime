@@ -17,7 +17,7 @@ x-mcp-services:
 
 x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
-  version: "4.1.0"
+  version: "4.1.1"
   dashboard_url: http://127.0.0.1:18092/
   skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
   required_keys: []
@@ -33,7 +33,7 @@ x-mcp-service-meta:
 
 services:
   ic-engine:
-    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.0-cpu
+    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.1-cpu
     container_name: ic-engine
     restart: unless-stopped
 

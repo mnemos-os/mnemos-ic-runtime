@@ -59,7 +59,7 @@ async def portfolio_refresh() -> dict[str, Any]:
     Large portfolios (200+ positions) need ~3-5min on a cold yfinance cache,
     so timeout matches the broader subprocess default (600s).
     """
-    return await _run_ic_engine(["refresh"], timeout_sec=600.0)
+    return await _run_ic_engine(["refresh"], timeout_sec=1800.0)
 
 
 async def portfolio_setup() -> dict[str, Any]:
