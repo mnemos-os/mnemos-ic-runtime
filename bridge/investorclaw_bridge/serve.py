@@ -269,8 +269,33 @@ def main() -> int:
     mcp_uvicorn = uvicorn.Server(mcp_config)
     dash_uvicorn = uvicorn.Server(dash_config)
 
+    # Boot-time auto-initialize so by the time any agent connects, the
+    # envelope cache is already warm. The agent gets sub-second responses
+    # on its very first portfolio_ask instead of the 5–15min cold-cache
+    # path. Disable with IC_INITIALIZE_ON_BOOT=0.
+    initialize_on_boot = os.environ.get("IC_INITIALIZE_ON_BOOT", "1").strip() not in ("0", "false", "no", "")
+
+    async def _auto_initialize() -> None:
+        # Brief delay so the listeners are up before we spawn engine subprocesses.
+        await asyncio.sleep(2.0)
+        try:
+            from .mcp.tools.portfolio import portfolio_initialize
+            logger.info("bridge.auto_initialize.start")
+            result = await portfolio_initialize(seed_question="What is in my portfolio?")
+            logger.info(
+                "bridge.auto_initialize.done",
+                ready=result.get("ready"),
+                total_duration_ms=result.get("total_duration_ms"),
+                stages=[s.get("stage") + ":" + str(s.get("exit_code")) for s in result.get("stages", [])],
+            )
+        except Exception as e:
+            logger.warning("bridge.auto_initialize.failed", error=f"{type(e).__name__}: {e}")
+
     async def _run_both() -> None:
-        await asyncio.gather(mcp_uvicorn.serve(), dash_uvicorn.serve())
+        tasks = [mcp_uvicorn.serve(), dash_uvicorn.serve()]
+        if initialize_on_boot:
+            tasks.append(_auto_initialize())
+        await asyncio.gather(*tasks)
 
     try:
         asyncio.run(_run_both())

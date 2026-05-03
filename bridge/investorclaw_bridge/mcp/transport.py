@@ -62,6 +62,12 @@ def register_tools(app: Any) -> None:
         return await TOOL_REGISTRY["portfolio_setup"]["handler"]()
 
     @app.tool()
+    async def portfolio_initialize(seed_question: str = "") -> dict[str, Any]:
+        """One-shot bootstrap: setup + refresh + optional seed ask. After
+        success every subsequent portfolio_ask hits the warm envelope cache."""
+        return await TOOL_REGISTRY["portfolio_initialize"]["handler"](seed_question or None)
+
+    @app.tool()
     async def portfolio_keys_status() -> dict[str, Any]:
         """Report which API keys are currently configured (names only)."""
         return await TOOL_REGISTRY["portfolio_keys_status"]["handler"]()
@@ -113,6 +119,11 @@ def register_tools(app: Any) -> None:
 # PydanticUserError: '... is not fully defined' at first request.
 class AskBody(_BaseModel):
     question: str
+
+
+class InitializeBody(_BaseModel):
+    """Optional seed_question for portfolio_initialize. Empty string skips the seed ask."""
+    seed_question: str = ""
 
 
 class KeysSetBody(_BaseModel):
@@ -172,6 +183,11 @@ def register_rest_routes(app: Any) -> None:
     @app.post("/api/portfolio/setup")
     async def rest_portfolio_setup() -> dict[str, Any]:
         return await TOOL_REGISTRY["portfolio_setup"]["handler"]()
+
+    @app.post("/api/portfolio/initialize")
+    async def rest_portfolio_initialize(body: InitializeBody = Body(default=InitializeBody())) -> dict[str, Any]:
+        """One-shot bootstrap. Body shape: `{"seed_question": "..."}` or `{}`."""
+        return await TOOL_REGISTRY["portfolio_initialize"]["handler"](body.seed_question or None)
 
     # Key management — paths match tool names exactly (`portfolio_keys_*`)
     # so agents can derive URLs from the catalog's `path` field directly.

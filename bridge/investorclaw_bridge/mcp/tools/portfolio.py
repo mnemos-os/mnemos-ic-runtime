@@ -92,6 +92,80 @@ async def portfolio_setup() -> dict[str, Any]:
     return await _run_ic_engine(["setup"])
 
 
+async def portfolio_initialize(seed_question: str | None = None) -> dict[str, Any]:
+    """One-shot bootstrap: discover portfolio files, refresh all sections,
+    optionally fire a seed ask to warm the LLM-narrative cache. After this
+    returns success, every subsequent portfolio_ask within the section TTLs
+    hits the warm envelope cache and returns in 1-3 seconds.
+
+    Designed for first-run install paths (the agent or container boot sequence
+    can call this once) and after manual portfolio file uploads.
+
+    Returns dict with per-stage status, total elapsed time, and the run_ids
+    of each underlying call (so the agent can retrieve any of them via
+    portfolio_response_get for diagnostics).
+
+    Args:
+        seed_question: optional natural-language question to fire after
+            refresh. Defaults to a holdings-flavored prompt that exercises
+            the narrator path. Pass empty string to skip the seed ask.
+    """
+    import time
+
+    overall_start = time.monotonic()
+    stages: list[dict[str, Any]] = []
+
+    # Stage 1: setup — auto-discover any portfolio files in /data/portfolios.
+    t0 = time.monotonic()
+    setup_result = await _run_ic_engine(["setup"])
+    stages.append({
+        "stage": "setup",
+        "exit_code": setup_result.get("exit_code", -1),
+        "duration_ms": int((time.monotonic() - t0) * 1000),
+        "ic_result": (setup_result.get("ic_result") or {}).get("ic_result", {}),
+    })
+
+    # Stage 2: refresh — populate envelope.sections.* (holdings, performance,
+    # bonds, analyst, news, synthesize, optimize, cashflow, peer). 600s
+    # subprocess timeout; large portfolios may take 5-15min cold.
+    t0 = time.monotonic()
+    refresh_result = await _run_ic_engine(["refresh"], timeout_sec=1800.0)
+    stages.append({
+        "stage": "refresh",
+        "exit_code": refresh_result.get("exit_code", -1),
+        "duration_ms": int((time.monotonic() - t0) * 1000),
+        "ic_result": (refresh_result.get("ic_result") or {}).get("ic_result", {}),
+    })
+
+    # Stage 3: seed ask — warms the narrator path so the very first user
+    # ask doesn't hit a cold LLM connection. Skip if caller passed empty
+    # string. Default seed exercises holdings + analyst sections, which
+    # are the most likely first-question targets.
+    if seed_question != "":
+        prompt = seed_question or "What is in my portfolio? Top 3 positions."
+        t0 = time.monotonic()
+        ask_result = await _run_ic_engine(["ask", prompt], timeout_sec=600.0)
+        stages.append({
+            "stage": "seed_ask",
+            "exit_code": ask_result.get("exit_code", -1),
+            "duration_ms": int((time.monotonic() - t0) * 1000),
+            "ic_result": (ask_result.get("ic_result") or {}).get("ic_result", {}),
+            "narrative_chars": len(ask_result.get("narrative") or ""),
+        })
+
+    return {
+        "initialized": all(s.get("exit_code") == 0 for s in stages),
+        "total_duration_ms": int((time.monotonic() - overall_start) * 1000),
+        "stages": stages,
+        "ready": all(s.get("exit_code") == 0 for s in stages),
+        "next_step": (
+            "Subsequent portfolio_ask calls will hit the warm envelope cache "
+            "(1-3s) until the per-section TTL expires (5-10 min depending "
+            "on section)."
+        ),
+    }
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Tool descriptors — registry shape mirrors v5 mnemos
 # ──────────────────────────────────────────────────────────────────────
@@ -110,10 +184,17 @@ def _tool(description: str, parameters: dict, required: list[str], handler) -> d
 TOOLS: dict[str, dict[str, Any]] = {
     "portfolio_ask": _tool(
         description=(
-            "Ask a natural-language portfolio question. Routes through "
-            "ic-engine's deterministic pipeline. Use this for any portfolio "
-            "question the user asks in plain English — InvestorClaw figures "
-            "out which analyzer to run."
+            "PRIMARY TOOL — call this for ANY portfolio question. The "
+            "container auto-initialized at boot, so the data cache is "
+            "already warm: holdings, performance, bonds, analyst ratings, "
+            "news (per-symbol + general/forex/crypto/merger categories), "
+            "synthesis, optimization, cashflow projections, peer analysis, "
+            "and Treasury yield curve are ALL pre-loaded into the envelope. "
+            "Just call portfolio_ask with the user's question verbatim — "
+            "you do NOT need to call portfolio_setup, portfolio_refresh, or "
+            "portfolio_initialize first. The engine routes deterministically "
+            "and the narrator returns a verified natural-language answer "
+            "with envelope-quoted numbers (no hallucination)."
         ),
         parameters={
             "question": {
@@ -139,9 +220,11 @@ TOOLS: dict[str, dict[str, Any]] = {
     ),
     "portfolio_refresh": _tool(
         description=(
-            "Refresh market data without re-uploading portfolio files. Re-runs "
-            "the ic-engine refresh pipeline against current portfolio files in "
-            "/data/portfolios/."
+            "ADVANCED — force a fresh data pull. The container already auto-"
+            "refreshes stale sections (TTLs 30s-300s) on every portfolio_ask, "
+            "so you almost never need this. Call only when the user "
+            "explicitly asks for a manual refresh, OR after they upload a "
+            "new portfolio file via /api/portfolio/setup."
         ),
         parameters={},
         required=[],
@@ -149,11 +232,36 @@ TOOLS: dict[str, dict[str, Any]] = {
     ),
     "portfolio_setup": _tool(
         description=(
-            "Auto-discover portfolio files in /data/portfolios/. Use on first "
-            "run or after the user uploads a new portfolio file."
+            "ADVANCED — auto-discover portfolio files in /data/portfolios/. "
+            "Already runs at container boot. Call only after the user uploads "
+            "a NEW portfolio file mid-session. For everyday use just call "
+            "portfolio_ask."
         ),
         parameters={},
         required=[],
         handler=portfolio_setup,
+    ),
+    "portfolio_initialize": _tool(
+        description=(
+            "One-shot bootstrap: setup + refresh + optional seed ask. Returns "
+            "after the envelope cache is fully populated, so every subsequent "
+            "portfolio_ask hits the warm cache and answers in 1-3 seconds. "
+            "Call this once after install, after uploading new portfolio "
+            "files, or whenever you want to force a fresh data pull. The "
+            "container can also auto-initialize at boot via env flag "
+            "IC_INITIALIZE_ON_BOOT=1."
+        ),
+        parameters={
+            "seed_question": {
+                "type": "string",
+                "description": (
+                    "Optional natural-language question to fire after refresh "
+                    "to warm the narrator/LLM cache. Defaults to a holdings "
+                    "prompt; pass empty string to skip."
+                ),
+            },
+        },
+        required=[],
+        handler=portfolio_initialize,
     ),
 }
