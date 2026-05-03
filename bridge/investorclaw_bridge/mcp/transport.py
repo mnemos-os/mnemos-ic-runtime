@@ -68,6 +68,11 @@ def register_tools(app: Any) -> None:
         return await TOOL_REGISTRY["portfolio_initialize"]["handler"](seed_question or None)
 
     @app.tool()
+    async def portfolio_initialize_status() -> dict[str, Any]:
+        """Live init state — poll until `ready: true` before firing portfolio_ask."""
+        return await TOOL_REGISTRY["portfolio_initialize_status"]["handler"]()
+
+    @app.tool()
     async def portfolio_keys_status() -> dict[str, Any]:
         """Report which API keys are currently configured (names only)."""
         return await TOOL_REGISTRY["portfolio_keys_status"]["handler"]()
@@ -188,6 +193,38 @@ def register_rest_routes(app: Any) -> None:
     async def rest_portfolio_initialize(body: InitializeBody = Body(default=InitializeBody())) -> dict[str, Any]:
         """One-shot bootstrap. Body shape: `{"seed_question": "..."}` or `{}`."""
         return await TOOL_REGISTRY["portfolio_initialize"]["handler"](body.seed_question or None)
+
+    @app.get("/api/portfolio/initialize/status")
+    @app.post("/api/portfolio/initialize_status")
+    async def rest_portfolio_initialize_status() -> dict[str, Any]:
+        """Live init state. GET for browser/curl convenience; POST for tool-name parity."""
+        return await TOOL_REGISTRY["portfolio_initialize_status"]["handler"]()
+
+    @app.get("/api/portfolio/initialize/stream")
+    async def rest_portfolio_initialize_stream():
+        """Server-sent-events stream of init state — agents can subscribe to
+        get push updates when the state changes (or every 2s as keepalive).
+        Closes the connection once the state reaches `ready` or `failed`.
+        """
+        from fastapi.responses import StreamingResponse
+        from .tools import get_init_state as _get_init_state
+        import asyncio as _asyncio
+        import json as _json
+
+        async def _gen():
+            last_payload = None
+            while True:
+                snap = _get_init_state()
+                payload = _json.dumps(snap, default=str)
+                if payload != last_payload:
+                    yield f"event: init_state\ndata: {payload}\n\n"
+                    last_payload = payload
+                if snap["state"] in ("ready", "failed"):
+                    yield "event: done\ndata: {}\n\n"
+                    return
+                await _asyncio.sleep(2.0)
+
+        return StreamingResponse(_gen(), media_type="text/event-stream")
 
     # Key management — paths match tool names exactly (`portfolio_keys_*`)
     # so agents can derive URLs from the catalog's `path` field directly.

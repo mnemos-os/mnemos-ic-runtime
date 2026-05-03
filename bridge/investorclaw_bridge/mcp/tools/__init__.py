@@ -21,6 +21,8 @@ from .portfolio import (
     portfolio_refresh,
     portfolio_setup,
     portfolio_initialize,
+    portfolio_initialize_status,
+    get_init_state,
 )
 from .keys import (
     KEYS_TOOLS,
@@ -69,6 +71,8 @@ __all__ = [
     "portfolio_refresh",
     "portfolio_setup",
     "portfolio_initialize",
+    "portfolio_initialize_status",
+    "get_init_state",
     "portfolio_keys_status",
     "portfolio_keys_set",
     "portfolio_keys_delete",

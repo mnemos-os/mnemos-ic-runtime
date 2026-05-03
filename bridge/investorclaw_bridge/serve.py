@@ -136,7 +136,16 @@ def main() -> int:
 
     @dashboard_app.get("/healthz")
     async def healthz() -> JSONResponse:
-        return JSONResponse(mcp_server.health_check())
+        # Health includes init state so agents polling /healthz can also
+        # gate on `init_state == "ready"` without an extra round-trip.
+        from .mcp.tools import get_init_state as _get_init_state
+        h = mcp_server.health_check()
+        snap = _get_init_state()
+        h["init_state"] = snap["state"]
+        h["init_ready"] = snap["ready"]
+        h["init_current_stage"] = snap["current_stage"]
+        h["init_elapsed_ms"] = snap["elapsed_ms"]
+        return JSONResponse(h)
 
     @dashboard_app.get("/api/version")
     async def version() -> JSONResponse:
