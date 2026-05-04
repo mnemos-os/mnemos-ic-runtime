@@ -36,3 +36,9 @@ test-results/
 # uv / Python
 .venv/
 .uv/
+
+# Sibling-repo work-tree (do not include as submodule)
+mnemos-rs/
+
+# Local fleet tooling (not for public runtime repo)
+tools/multi_host_load.sh
