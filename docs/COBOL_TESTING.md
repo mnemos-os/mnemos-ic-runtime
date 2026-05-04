@@ -127,6 +127,200 @@ different tool surface in each runtime — OpenClaw might call
 
 ---
 
+## 3a. What an Agentic COBOL spec actually looks like
+
+The methodology is named after COBOL because the *visual structure* of the
+spec maps onto COBOL's two-division program layout. COBOL programs were
+deliberately written so a non-programmer (an accountant, a payroll clerk)
+could read them aloud and verify behavior:
+
+```cobol
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. PAYROLL-BONUS.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  EMPLOYEE-RECORD.
+           05  EMP-NAME              PIC X(30).
+           05  MONTHLY-PAY           PIC 9(7)V99.
+           05  YEAR-TO-DATE-EARNINGS PIC 9(9)V99.
+       01  CONSTANTS.
+           05  BONUS-THRESHOLD       PIC 9(7)V99 VALUE 100000.00.
+
+       PROCEDURE DIVISION.
+       MAIN-PROCESS.
+           READ EMPLOYEE-FILE INTO EMPLOYEE-RECORD
+               AT END GO TO END-PROGRAM.
+           ADD MONTHLY-PAY TO YEAR-TO-DATE-EARNINGS
+               GIVING NEW-TOTAL.
+           IF NEW-TOTAL > BONUS-THRESHOLD THEN
+               PERFORM CALCULATE-BONUS.
+           GO TO MAIN-PROCESS.
+       END-PROGRAM.
+           CLOSE EMPLOYEE-FILE.
+           STOP RUN.
+```
+
+A 1959 accountant could read that aloud — "READ employee record. ADD monthly
+pay to year-to-date earnings. IF new total greater than bonus threshold,
+PERFORM calculate bonus." — and verify the program represented what payroll
+actually wanted. The English-prose surface *was* the acceptance test.
+
+Agentic COBOL's spec format is the same shape: a **DATA DIVISION** of
+natural-language prompts users actually say, paired with a **PROCEDURE
+DIVISION** of expected tool routes the agent must invoke. Read aloud, it
+should be possible for a domain expert (a portfolio manager, a finance
+analyst) to verify both.
+
+Here's an actual slice of `harness/cobol/nlq-prompts.json` rendered the same
+way COBOL renders DATA + PROCEDURE divisions:
+
+```cobol
+      *  ───────────────  AGENTIC COBOL DIVISION  ───────────────
+      *  Spec: harness/cobol/nlq-prompts.json
+      *  Domain: portfolio analysis (InvestorClaw)
+      *  Acceptance: read aloud; verify the routes match the prompts.
+
+       DATA DIVISION.
+       NLQ-CORPUS SECTION.
+
+       01  P01-HOLDINGS-1.
+           05  PROMPT-TEXT     "What is in my portfolio right now?".
+           05  INTENT          "portfolio-snapshot".
+           05  CATEGORY        "holdings".
+
+       01  P03-PERFORMANCE-1.
+           05  PROMPT-TEXT     "How has my portfolio performed this year?".
+           05  INTENT          "performance-check".
+           05  CATEGORY        "performance".
+
+       01  P04-PERFORMANCE-2.
+           05  PROMPT-TEXT     "What is my Sharpe ratio and max drawdown?".
+           05  INTENT          "performance-check".
+           05  CATEGORY        "performance".
+
+       01  P16-NEWS-MERGER.
+           05  PROMPT-TEXT     "Any big mergers or acquisitions in the
+                                news today?".
+           05  INTENT          "news-merger".
+           05  CATEGORY        "news".
+
+       01  P22-BONDS-DURATION.
+           05  PROMPT-TEXT     "Show my bond duration.".
+           05  INTENT          "bonds-duration".
+           05  CATEGORY        "bonds".
+
+
+       PROCEDURE DIVISION.
+       AGENT-ROUTING SECTION.
+
+       WHEN PROMPT MATCHES P01-HOLDINGS-1
+           PERFORM PORTFOLIO-VIEW SECTION="holdings".
+           ON CLAUDE-CODE INVOKE "/investorclaw:ask".
+           ON OPENCLAW    INVOKE "portfolio_view section=holdings".
+           ON ZEROCLAW    INVOKE "portfolio_view section=holdings".
+           ON HERMES      INVOKE "portfolio_view section=holdings".
+
+       WHEN PROMPT MATCHES P03-PERFORMANCE-1
+           PERFORM PORTFOLIO-VIEW SECTION="performance".
+
+       WHEN PROMPT MATCHES P04-PERFORMANCE-2
+           PERFORM PORTFOLIO-VIEW SECTION="performance".
+
+       WHEN PROMPT MATCHES P16-NEWS-MERGER
+           PERFORM PORTFOLIO-MARKET SECTION="news" TOPIC="merger".
+
+       WHEN PROMPT MATCHES P22-BONDS-DURATION
+           PERFORM PORTFOLIO-VIEW SECTION="bonds" TOPIC="duration".
+
+       VERDICT SECTION.
+       ACCEPT WHEN
+           IC-RESULT-PRESENT IS TRUE
+           AND HMAC-PRESENT IS TRUE
+           AND NARRATIVE-CHARS NOT LESS THAN 200
+           AND BODY-CHARS NOT LESS THAN 100
+           AND REJECTION-MARKERS COUNT EQUALS 0.
+       REJECT WHEN
+           NARRATIVE CONTAINS "I don't have data on that"
+           OR NARRATIVE CONTAINS "Section did not run"
+           OR NARRATIVE STARTS-WITH "ic-engine completed your portfolio
+                                     analysis with [".
+
+       END PROGRAM.
+```
+
+That's not actually executable COBOL — it's a *visualization* of the
+acceptance spec in a form a 1959 COBOL programmer would recognize. The
+real format is JSON (machine-friendly) but the conceptual shape is the
+same:
+
+```json
+{
+  "prompts": [
+    {
+      "id": "p01-holdings-1",
+      "intent": "portfolio-snapshot",
+      "prompt": "What is in my portfolio right now?",
+      "expected_routes": {
+        "investorclaw":   ["portfolio_view section=holdings", "holdings"],
+        "investorclaude": ["ask"]
+      }
+    },
+    {
+      "id": "p04-performance-2",
+      "intent": "performance-check",
+      "prompt": "What is my Sharpe ratio and max drawdown?",
+      "expected_routes": {
+        "investorclaw":   ["portfolio_view section=performance", "performance"],
+        "investorclaude": ["ask"]
+      }
+    },
+    {
+      "id": "p16-news-merger",
+      "intent": "news-merger",
+      "prompt": "Any big mergers or acquisitions in the news today?",
+      "expected_routes": {
+        "investorclaw":   ["portfolio_market section=news topic=merger", "market"],
+        "investorclaude": ["portfolio-view news", "portfolio-market news"]
+      }
+    }
+  ]
+}
+```
+
+### Why this isn't Gherkin / BDD
+
+A natural objection: "this is just BDD." Gherkin (`Given/When/Then`) and
+Cucumber `.feature` files are clearly in the same lineage. The differences
+are real and worth being explicit about:
+
+| Property | Gherkin / BDD | Agentic COBOL |
+|---|---|---|
+| Test subject | Application code (deterministic) | Agent + LLM + tools (stochastic) |
+| Test layer | Behavior of a function or workflow | **Tool selection from natural language** |
+| Per-trial outcome | Same input → same output (asserted) | Same input → distribution of outputs (sampled) |
+| Pass criterion | Boolean per scenario | Threshold % per prompt × runtime × trial |
+| Failure mode caught | Logic bug in the function | **Description-as-API bug — the LLM never invoked the function** |
+| Re-run cost | Free (deterministic) | Real LLM tokens (~$0.02-$0.10 per prompt at MiniMax-M2 cost) |
+| What "scoring" means | Compare expected output to actual output | Compare expected tool invocations to detected tool invocations in the recorded transcript |
+
+Gherkin assumes the test subject is parser-stable. COBOL's parser was also
+parser-stable — but COBOL's *user* (the accountant reading the program)
+was the human-language layer. The acceptance test was "can the human read
+this and verify it." Agentic COBOL has the same shape but the human-language
+layer has moved into the runtime: the LLM is now reading the prompt and
+deciding what to do. The acceptance test is "can the prompt + expected
+routes spec be read aloud by a domain expert and verified," then "did the
+agent route correctly when run."
+
+You can absolutely emit Gherkin from the JSON corpus if your team uses
+Cucumber tooling — `harness/cobol/cobol_barrage_cross_runtime.py` will
+emit a `.feature` view on `--format gherkin`. The methodology survives
+the format choice. The substance is in the prompt-route pairs, not the
+syntax.
+
+---
+
 ## 4. The verdict (what counts as PASS)
 
 The v4.x verdict is **strict** — significantly stricter than v2.x — and
