@@ -1,6 +1,6 @@
 # mnemos-ic-runtime
 
-Container bridge for **InvestorClaw 4.0** — the InvestorClaw application
+Container bridge for **InvestorClaw 4.1.18** — the InvestorClaw application
 service that pairs `ic-engine` (Python, FINOS CDM 5.x portfolio analysis)
 with `mnemos-rs` (Rust, sqlite-backed memory).
 
@@ -98,12 +98,13 @@ mnemos-ic-runtime/
 | Artifact | License |
 |---|---|
 | Container code, bridge, dashboard, tests | Apache 2.0 |
-| `SKILL.md`, `install.yaml`, `compose.yml` (distribution edge) | MIT |
+| `SKILL.md`, `install.yaml`, `compose.yml`, `agent-skills/**` (distribution edge) | MIT-0 |
 
 Per-file `SPDX-License-Identifier` headers indicate the applicable
 license. The `compose.yml` + `install.yaml` + `SKILL.md` are intentionally
-MIT to permit frictionless redistribution through agent skill marketplaces
-(Clawhub, Claude Code marketplace) without an Apache NOTICE-file overhead.
+MIT-0 (MIT No Attribution) — required by ClawHub schema and a deliberate
+choice to permit frictionless redistribution through agent skill marketplaces
+(ClawHub, Claude Code marketplace) without an Apache NOTICE-file overhead.
 
 The substantive code (bridge, dashboard, ic-engine source it pulls in) is
 Apache 2.0. The patent grant and NOTICE requirements apply there as

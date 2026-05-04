@@ -12,7 +12,7 @@ Copyright 2026 InvestorClaw Contributors
 
 This SKILL.md is MIT-0-licensed and tailored for the NousResearch Hermes
 Agent (v0.12+). The InvestorClaw service it connects to is Apache 2.0.
-See LICENSE-MIT in this directory.
+See LICENSE-MIT-0 in this directory.
 -->
 
 # InvestorClaw — Hermes Skill (v4.0)

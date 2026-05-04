@@ -5,7 +5,7 @@
 
   "name": "investorclaw",
   "displayName": "InvestorClaw",
-  "version": "4.0.0",
+  "version": "4.1.18",
   "description": "Portfolio analysis via local Docker service. Adds /ask and /refresh slash commands plus 15 MCP tools for holdings, performance, bonds, optimization, and more. Educational only — never investment advice.",
   "author": {
     "name": "InvestorClaw Contributors",
@@ -56,7 +56,7 @@
     "investorclaw": {
       "transport": "http",
       "url": "http://127.0.0.1:8090/mcp",
-      "// note": "Portfolio analysis tools. Service runs in user's Docker (mnemos-os/ic-engine:4.0)."
+      "// note": "Portfolio analysis tools. Service runs in user's Docker (mnemos-os/ic-engine:4.1.18-cpu)."
     },
     "mnemos": {
       "transport": "http",
@@ -73,7 +73,7 @@
 
   "postInstall": {
     "// TODO: confirm postInstall field name and message-rendering convention": null,
-    "message": "InvestorClaw plugin installed. To finish setup, run:\n\n  mkdir -p ~/.investorclaw\n  curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml\n  cd ~/.investorclaw && docker compose up -d\n\nThen open http://localhost:8092 to upload a portfolio. See INSTALL.md for full details."
+    "message": "InvestorClaw plugin installed. To finish setup, run:\n\n  mkdir -p ~/.investorclaw\n  curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml\n  cd ~/.investorclaw && docker compose up -d\n\nThen open http://localhost:8092 to upload a portfolio. See INSTALL.md for full details."
   },
 
   "// poweredBy attribution surfaced on listing page": null,

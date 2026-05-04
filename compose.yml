@@ -17,7 +17,7 @@ x-mcp-services:
 
 x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
-  version: "4.1.14"
+  version: "4.1.18"
   dashboard_url: http://127.0.0.1:18092/
   skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
   required_keys: []

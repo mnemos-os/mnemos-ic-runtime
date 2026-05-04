@@ -3,7 +3,7 @@ SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
 This INSTALL.md is MIT-0-licensed. The InvestorClaw service it installs is
-Apache 2.0. See ../../LICENSE-MIT for the full MIT text.
+Apache 2.0. See ../../LICENSE-MIT-0 for the full MIT text.
 -->
 
 # Installing InvestorClaw for Claude Desktop

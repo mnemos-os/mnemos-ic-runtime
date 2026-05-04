@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
 This SKILL.md is MIT-0-licensed. The InvestorClaw service it connects to is
-Apache 2.0. See the project LICENSE-MIT for full text.
+Apache 2.0. See the project LICENSE-MIT-0 for full text.
 
 This skill is audit-compliant for zeroclaw 0.7.3+: no scripts, no
 symlinks, no curl-pipe-shell patterns, no remote markdown links.

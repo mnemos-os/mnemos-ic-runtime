@@ -38,7 +38,7 @@ curl -fsS http://127.0.0.1:5002/healthz   # mnemos
 ```
 
 Both should return `200 OK` within ~30 seconds on first start (the
-`mnemos-os/ic-engine:4.0` image needs a moment to warm caches).
+`mnemos-os/ic-engine:4.1.18-cpu` image needs a moment to warm caches).
 
 ## Step 2 — Register the two MCP servers with openclaw
 

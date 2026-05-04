@@ -1,4 +1,4 @@
-# RFC v0.1 — InvestorClaw 4.0 Application Service Architecture
+# RFC v0.1 — InvestorClaw 4.1.18 Application Service Architecture
 
 **Status:** Draft (pre-implementation)
 **Author:** Claude (jperlow@gmail.com), in collaboration with the user
@@ -88,7 +88,7 @@ HOST (laptop / Pi / homelab VPS / cloud VM)
 │           │ HTTP (compose bridge net)                            │
 │           │                                                      │
 │  ┌──────────────────────┐                                        │
-│  │  ic-engine:4.0       │  /data/ic-engine.db (sqlite WAL)       │
+│  │  ic-engine:4.1.18-cpu       │  /data/ic-engine.db (sqlite WAL)       │
 │  │  Python 3.12 +        │  /data/portfolios/                     │
 │  │  pandas/numpy/scipy   │  /data/keys.env (mode 0600)            │
 │  │  + ic-engine pinned   │  /data/reports/                        │
@@ -129,8 +129,8 @@ free to use whatever scientific stack it wants.
 
 ## 5. Compose convention (x-mcp-services)
 
-InvestorClaw 4.0 distribution = a single `compose.yml` at a stable URL
-(`https://get.investorclaw.app/v4.0/compose.yml`) with two extension keys
+InvestorClaw 4.1.18 distribution = a single `compose.yml` at a stable URL
+(`https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml`) with two extension keys
 that describe the MCP servers:
 
 ```yaml
@@ -148,7 +148,7 @@ x-mcp-services:                              # Compose ignores x-* keys; tools r
 
 x-mcp-service-meta:
   version: "4.0"
-  bundle_url: https://get.investorclaw.app/v4.0/install.yaml
+  bundle_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/v4.0/install.yaml
   dashboard: http://127.0.0.1:8092/
   required_keys: []
   optional_keys: [TOGETHER_API_KEY, FINNHUB_KEY, FRED_API_KEY, NEWSAPI_KEY]
@@ -160,7 +160,7 @@ services:
     ports: ["5002:5002"]
 
   ic-engine:
-    image: mnemos-os/ic-engine:4.0
+    image: mnemos-os/ic-engine:4.1.18-cpu
     volumes: [data:/data]
     environment:
       MNEMOS_BASE: http://mnemos:5002
@@ -350,7 +350,7 @@ User: "Yes"
 Agent (executes via its existing shell + Edit tools):
   1. docker --version                        # verify prereq
   2. mkdir -p ~/.investorclaw
-  3. curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml
+  3. curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml
   4. cd ~/.investorclaw && docker compose up -d
   5. wait_for http://127.0.0.1:8090/healthz
   6. write its own MCP server config (file Edit, runtime-specific path)
@@ -402,7 +402,7 @@ JS or preact (small footprint, no build pipeline).
 | `mnemos-os/mnemos-ic-runtime` (this repo: bridge code, MnemosClient, Dockerfile) | Apache 2.0 |
 | **`SKILL.md`** at distribution edge | **MIT** |
 | **`install.yaml`** | **MIT** |
-| **`compose.yml`** at `get.investorclaw.app/` | **MIT** |
+| **`compose.yml`** at `raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/` | **MIT** |
 | Trademark on "InvestorClaw" name | (separate from copyright) |
 
 Distribution-edge artifacts are MIT for max redistributor friction-free

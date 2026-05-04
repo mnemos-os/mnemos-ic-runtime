@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
 This SKILL.md is MIT-0-licensed. The InvestorClaw service it connects to is
-Apache 2.0. See ../../LICENSE-MIT for the full MIT text.
+Apache 2.0. See ../../LICENSE-MIT-0 for the full MIT text.
 -->
 
 # InvestorClaw — Claude Desktop Reference
