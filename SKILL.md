@@ -71,7 +71,7 @@ The skill is a Docker Compose stack. With Docker or Podman installed:
 docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml up -d
 ```
 
-That's it. The compose pulls `ghcr.io/perlowja/ic-engine:4.1.16-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
+That's it. The compose pulls `ghcr.io/perlowja/ic-engine:4.1.17-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
 
 ### If Docker isn't installed
 
@@ -336,7 +336,7 @@ docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/
 
 - Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
 - Distribution-edge artifacts (this `SKILL.md`, `compose.yml`): MIT
-- Image: `ghcr.io/perlowja/ic-engine:4.1.16-cpu` (also at `:latest`)
+- Image: `ghcr.io/perlowja/ic-engine:4.1.17-cpu` (also at `:latest`)
 - RFC: [`~/2026-05-01-dockerized-skill-convention.md`](https://github.com/mnemos-os/mnemos-ic-runtime/blob/main/RFC.md)
 - Cross-project contract: [`mnemos-os/mcp-contracts`](https://github.com/mnemos-os/mcp-contracts)
 
