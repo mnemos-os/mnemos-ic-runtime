@@ -52,7 +52,9 @@ zeroclaw services install https://raw.githubusercontent.com/mnemos-os/mnemos-ic-
 - **[docs/COBOL_TESTING.md](docs/COBOL_TESTING.md)** — *why* we built the
   Agentic COBOL 250-prompt regression suite, what the strict verdict
   catches that no other test layer can, and how it's the v4.x ship gate.
-- **[RFC-v0.1.md](RFC-v0.1.md)** — full v4.0 architecture specification.
+  Long-form rationale published at
+  [techbroiler.net/all-our-tests-passed-the-agent-was-still-broken](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/).
+- **[RFC-v0.1.md](RFC-v0.1.md)** — full v4.x architecture specification.
 
 ```
 HOST

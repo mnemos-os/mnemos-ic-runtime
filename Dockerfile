@@ -101,7 +101,7 @@ RUN set -ex; \
 #                         unconditionally, so we replace with a tiny pure-Python
 #                         Apache-2.0 shim. yfinance's use is hash-stability for
 #                         dict cache keys; a subclass-of-dict shim suffices.
-# Copy v4.0 bridge code (MnemosClient, MCP server wrappers, dashboard
+# Copy the bridge code (MnemosClient, MCP server wrappers, dashboard
 # static files, frozendict shim) before any post-uv-sync surgery that
 # references files in /build/bridge/.
 COPY bridge/ /build/bridge/
@@ -127,7 +127,7 @@ RUN set -ex; \
 # pulls torch + transformers + safetensors + tokenizers + huggingface-hub +
 # sympy + (in some configs) opencv-python-headless. After our CUDA strip
 # above, that's still ~1 GB of binary weight in the venv. None of it is
-# load-bearing for the v4.0 beta deterministic-engine path:
+# load-bearing for the deterministic-engine path:
 #
 #   - clio/runtime/hardware.py:816 wraps `import torch` in try/except;
 #     falls through to HardwareProfile-based "cuda"/"mps"/"cpu" detection.
@@ -142,7 +142,7 @@ RUN set -ex; \
 #
 # Until the upstream clio swap lands we strip the stack at the runtime
 # layer. Unknown-broker schema mapping fails loudly on use — that's the
-# documented v4.0 beta limitation.
+# documented runtime limitation.
 RUN set -ex; \
     PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
        | /usr/local/bin/python3 -c "import json, sys; ml={'torch','torchvision','torchaudio','functorch','torchgen','transformers','sentence-transformers','safetensors','tokenizers','huggingface-hub','accelerate','sympy','opencv-python','opencv-python-headless','onnxruntime-gpu'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in ml))"); \
@@ -194,7 +194,7 @@ RUN set -ex; \
     /build/.venv/bin/python -c "import ic_engine; print('ic_engine ok')"; \
     /build/.venv/bin/python -c "import litellm; print('litellm ok (narrator dep)')"
 
-# Pass 5 (post v4.0.1 trim): orphans-not-caught-earlier + tests/ directories.
+# Pass 5 (post v4.1.x trim): orphans-not-caught-earlier + tests/ directories.
 #
 #   sqlalchemy (14 MB)  Not used by ic_engine or bridge anywhere
 #                       (greppable: zero hits on `sqlalchemy` and `sqlite3`
