@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.20","image":"ghcr.io/argonautsystems/ic-engine:4.1.20-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.21","image":"ghcr.io/argonautsystems/ic-engine:4.1.21-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -84,7 +84,7 @@ The skill is a Docker Compose stack. With Docker or Podman installed:
 docker compose up -d  # uses compose.yml shipped in this skill
 ```
 
-That's it. The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.20-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
+That's it. The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.21-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
 
 ### If Docker isn't installed
 
@@ -93,9 +93,9 @@ Use the agent's shell tool to install:
 | OS | Command |
 |---|---|
 | **macOS** | `brew install --cask docker` then start Docker.app |
-| **Debian/Ubuntu** | `curl -fsSL https://get.docker.com \| sh` |
+| **Debian/Ubuntu** | `apt-get install -y docker.io docker-compose-plugin` (or follow https://docs.docker.com/engine/install/) |
 | **Fedora/RHEL** | `dnf install -y docker-ce docker-compose-plugin && systemctl start docker` |
-| **Podman alternative** | `podman compose -f <url> up -d` (drop-in replacement on most distros) |
+| **Podman alternative** | `podman compose up -d` (drop-in replacement on most distros) |
 
 After install, verify with `docker --version` then run the compose-up command.
 
@@ -303,14 +303,12 @@ curl -sS -X POST http://127.0.0.1:18090/api/portfolio/ask \
   --max-time 120
 ```
 
-If your agent supports compliance testing, run:
+If your agent supports compliance testing, vendor `test_mcp_compliance.py`
+from the [`mcp-contracts` repo](https://github.com/mnemos-os/mcp-contracts) into your project, then run:
 
 ```bash
-python3 https://raw.githubusercontent.com/mnemos-os/mcp-contracts/main/test_mcp_compliance.py \
-  --url http://127.0.0.1:18090/mcp
+python3 test_mcp_compliance.py --url http://127.0.0.1:18090/mcp
 ```
-
-(Or vendor `test_mcp_compliance.py` from the [`mcp-contracts` repo](https://github.com/mnemos-os/mcp-contracts).)
 
 ---
 
@@ -349,7 +347,7 @@ docker compose down -v
 
 - Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
 - Distribution-edge artifacts (this `SKILL.md`, `compose.yml`, `install.yaml`, `agent-skills/**`): **MIT-0** (MIT No Attribution — `LICENSE-MIT-0`). Required for ClawHub plugin publishing; the no-attribution clause means downstream skill registries can re-host without preserving copyright notice.
-- Image: `ghcr.io/argonautsystems/ic-engine:4.1.20-cpu` (also at `:latest`)
+- Image: `ghcr.io/argonautsystems/ic-engine:4.1.21-cpu` (also at `:latest`)
 - RFC: [`~/2026-05-01-dockerized-skill-convention.md`](https://github.com/mnemos-os/mnemos-ic-runtime/blob/main/RFC.md)
 - Cross-project contract: [`mnemos-os/mcp-contracts`](https://github.com/mnemos-os/mcp-contracts)
 

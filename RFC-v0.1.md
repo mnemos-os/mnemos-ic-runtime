@@ -1,4 +1,4 @@
-# RFC v0.1 — InvestorClaw 4.1.20 Application Service Architecture
+# RFC v0.1 — InvestorClaw 4.1.21 Application Service Architecture
 
 **Status:** Draft (pre-implementation)
 **Author:** Claude (jperlow@gmail.com), in collaboration with the user
@@ -88,7 +88,7 @@ HOST (laptop / Pi / homelab VPS / cloud VM)
 │           │ HTTP (compose bridge net)                            │
 │           │                                                      │
 │  ┌──────────────────────┐                                        │
-│  │  ic-engine:4.1.20-cpu       │  /data/ic-engine.db (sqlite WAL)       │
+│  │  ic-engine:4.1.21-cpu       │  /data/ic-engine.db (sqlite WAL)       │
 │  │  Python 3.12 +        │  /data/portfolios/                     │
 │  │  pandas/numpy/scipy   │  /data/keys.env (mode 0600)            │
 │  │  + ic-engine pinned   │  /data/reports/                        │
@@ -129,7 +129,7 @@ free to use whatever scientific stack it wants.
 
 ## 5. Compose convention (x-mcp-services)
 
-InvestorClaw 4.1.20 distribution = a single `compose.yml` at a stable URL
+InvestorClaw 4.1.21 distribution = a single `compose.yml` at a stable URL
 (`https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml`) with two extension keys
 that describe the MCP servers:
 
@@ -160,7 +160,7 @@ services:
     ports: ["5002:5002"]
 
   ic-engine:
-    image: mnemos-os/ic-engine:4.1.20-cpu
+    image: mnemos-os/ic-engine:4.1.21-cpu
     volumes: [data:/data]
     environment:
       MNEMOS_BASE: http://mnemos:5002
