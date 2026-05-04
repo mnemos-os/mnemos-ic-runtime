@@ -33,7 +33,7 @@ x-mcp-service-meta:
 
 services:
   ic-engine:
-    image: registry.gitlab.com/mnemos-os/mnemos-ic-runtime/ic-engine:4.1.16-cpu
+    image: ghcr.io/perlowja/ic-engine:4.1.16-cpu
     container_name: ic-engine
     restart: unless-stopped
 
