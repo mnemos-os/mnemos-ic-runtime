@@ -3,8 +3,9 @@
 > Status: design + methodology rationale.
 > Companion docs: `INSTALL_MODELS.md` (architecture), `RFC-v0.1.md` (v4.0
 > specification), `harness/cobol/AGENTIC_COBOL_SPEC.md` in `argonautsystems/InvestorClaw`
-> (canonical 250-NLQ prompt set + scorer), and the publishable blog draft at
-> `argonautsystems/InvestorClaw/harness/cobol/BLOG_DRAFT_techbroiler.md`.
+> (canonical 250-NLQ prompt set + scorer), and the published long-form rationale at
+> [**"All Our Tests Passed. The Agent Was Still Broken."**](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/)
+> (Jason Perlow, techbroiler.net, 2026-04-29).
 
 ## TL;DR
 
@@ -333,9 +334,11 @@ Adoption checklist:
    and rejection markers.
 6. Run it on every release. Treat the pass-rate as the ship gate.
 
-The harness in this repo is the reference implementation. The blog draft
-in `argonautsystems/InvestorClaw/harness/cobol/BLOG_DRAFT_techbroiler.md`
-is the long-form rationale (publishable as-is once it's reviewed).
+The harness in this repo is the reference implementation. The long-form
+rationale is published as
+[**"All Our Tests Passed. The Agent Was Still Broken."**](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/)
+(techbroiler.net, 2026-04-29) — the canonical narrative explanation,
+recommended reading before adopting Agentic COBOL for your own product.
 
 ---
 
@@ -349,8 +352,8 @@ is the long-form rationale (publishable as-is once it's reviewed).
   multi-runtime harness runner
 - `argonautsystems/InvestorClaw/harness/cobol/rescore_cross_runtime.py` —
   scorer (audit-friendly, runs against recorded JSONL)
-- `argonautsystems/InvestorClaw/harness/cobol/BLOG_DRAFT_techbroiler.md` —
-  long-form publishable rationale
+- [**"All Our Tests Passed. The Agent Was Still Broken."**](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/) —
+  published long-form rationale (techbroiler.net, Jason Perlow, 2026-04-29)
 - `INSTALL_MODELS.md` (this repo) — architectural context for why two
   install models exist
 - `RFC-v0.1.md` (this repo) — v4.0 specification including the cobol
