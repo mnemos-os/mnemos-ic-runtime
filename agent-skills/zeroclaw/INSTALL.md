@@ -53,7 +53,7 @@ This starts two containers bound to localhost:
 | Container | Image | Port |
 | --- | --- | --- |
 | mnemos | `mnemos-os/mnemos-rs:4.2` | `127.0.0.1:5002` |
-| ic-engine | `mnemos-os/ic-engine:4.1.19-cpu` | `127.0.0.1:18090` |
+| ic-engine | `mnemos-os/ic-engine:4.1.20-cpu` | `127.0.0.1:18090` |
 | dashboard (optional) | bundled | `127.0.0.1:8092` |
 
 Wait for health:

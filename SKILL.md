@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.19","image":"ghcr.io/argonautsystems/ic-engine:4.1.19-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.20","image":"ghcr.io/argonautsystems/ic-engine:4.1.20-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -81,10 +81,10 @@ file)? Call `portfolio_initialize` — it returns when the cache is warm again.
 The skill is a Docker Compose stack. With Docker or Podman installed:
 
 ```bash
-docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml up -d
+docker compose up -d  # uses compose.yml shipped in this skill
 ```
 
-That's it. The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.19-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
+That's it. The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.20-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
 
 ### If Docker isn't installed
 
@@ -318,10 +318,10 @@ python3 https://raw.githubusercontent.com/mnemos-os/mcp-contracts/main/test_mcp_
 
 ```bash
 # Stop (preserves data)
-docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml down
+docker compose down
 
 # Stop and remove the data volume
-docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml down -v
+docker compose down -v
 ```
 
 ---
@@ -349,7 +349,7 @@ docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/
 
 - Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
 - Distribution-edge artifacts (this `SKILL.md`, `compose.yml`, `install.yaml`, `agent-skills/**`): **MIT-0** (MIT No Attribution — `LICENSE-MIT-0`). Required for ClawHub plugin publishing; the no-attribution clause means downstream skill registries can re-host without preserving copyright notice.
-- Image: `ghcr.io/argonautsystems/ic-engine:4.1.19-cpu` (also at `:latest`)
+- Image: `ghcr.io/argonautsystems/ic-engine:4.1.20-cpu` (also at `:latest`)
 - RFC: [`~/2026-05-01-dockerized-skill-convention.md`](https://github.com/mnemos-os/mnemos-ic-runtime/blob/main/RFC.md)
 - Cross-project contract: [`mnemos-os/mcp-contracts`](https://github.com/mnemos-os/mcp-contracts)
 

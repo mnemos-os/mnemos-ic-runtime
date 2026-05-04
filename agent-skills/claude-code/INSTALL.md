@@ -46,7 +46,7 @@ cd ~/.investorclaw && docker compose up -d
 ```
 
 This starts two containers: `mnemos-os/mnemos-rs:4.2` on
-`127.0.0.1:5002` (memory) and `mnemos-os/ic-engine:4.1.19-cpu` on
+`127.0.0.1:5002` (memory) and `mnemos-os/ic-engine:4.1.20-cpu` on
 `127.0.0.1:18090` (portfolio analysis). First boot pulls ~600 MB of
 images; subsequent boots are instant.
 

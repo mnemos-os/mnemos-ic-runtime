@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# InvestorClaw 4.1.19 ic-engine container — bridge image for the v4.1.18 application service
+# InvestorClaw 4.1.20 ic-engine container — bridge image for the v4.1.18 application service
 #
-# Builds: mnemos-os/ic-engine:4.1.19-cpu
+# Builds: mnemos-os/ic-engine:4.1.20-cpu
 # Pairs with: mnemos-os/mnemos-rs:4.2 (over compose bridge network)
 #
 # What's in this container:
@@ -336,4 +336,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.1.19"
+LABEL org.opencontainers.image.version="4.1.20"
