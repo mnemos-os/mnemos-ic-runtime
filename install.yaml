@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT-0
-# InvestorClaw 4.1.26 — install spec for shell-tool agents
+# InvestorClaw 4.1.27 — install spec for shell-tool agents
 # (derived view of compose.yml's x-mcp-services + x-mcp-service-meta keys)
 #
 # Agents with native Docker integration (zeroclaw on master) should use
@@ -9,7 +9,7 @@
 # computer-use, openclaw, hermes) walk this YAML linearly — request user
 # permission per step, execute via shell, report back.
 
-version: "4.1.26"
+version: "4.1.27"
 spec: "compose-x-mcp-services-install/v1"
 # compose.yml is bundled in this skill directory; no remote fetch.
 dashboard_url: http://127.0.0.1:18092/
@@ -19,10 +19,14 @@ supported_agents: [openclaw, hermes]
 prerequisites:
   - id: docker
     check: ["docker", "--version"]
+    # Hint URLs only — agents should NOT execute package-manager install
+    # commands directly. Docker installation typically requires sudo and
+    # adds the user to the `docker` group, both of which warrant explicit
+    # user consent. Surface these URLs to the user instead.
     install_hint:
-      darwin: "brew install --cask docker  # opens Docker Desktop installer"
-      linux: "apt-get install -y docker.io docker-compose-plugin  # OR follow https://docs.docker.com/engine/install/"
-      windows: "winget install Docker.DockerDesktop"
+      darwin: "https://docs.docker.com/desktop/install/mac-install/  # Docker Desktop for macOS"
+      linux: "https://docs.docker.com/engine/install/  # Docker Engine for Linux"
+      windows: "https://docs.docker.com/desktop/install/windows-install/  # Docker Desktop for Windows (WSL2)"
     failure_action: "report_to_user"   # don't auto-install; ask the user
 
 steps:

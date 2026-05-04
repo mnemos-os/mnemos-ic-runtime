@@ -73,7 +73,7 @@
 
   "postInstall": {
     "// TODO: confirm postInstall field name and message-rendering convention": null,
-    "message": "InvestorClaw plugin installed. To finish setup, run:\n\n  mkdir -p ~/.investorclaw\n  curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml\n  cd ~/.investorclaw && docker compose up -d\n\nThen open http://localhost:18092 to upload a portfolio. See INSTALL.md for full details."
+    "message": "InvestorClaw plugin installed. To finish setup, run:\n\n  mkdir -p ~/.investorclaw\n  curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/compose.yml > ~/.investorclaw/compose.yml\n  cd ~/.investorclaw && docker compose up -d\n\nThen open http://localhost:18092 to upload a portfolio. See INSTALL.md for full details."
   },
 
   "// poweredBy attribution surfaced on listing page": null,

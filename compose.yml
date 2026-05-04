@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT-0
 # InvestorClaw v4.0 — dockerized-skill convention compose
-# Spec: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/RFC.md
-# Skill: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
+# Spec: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/RFC.md
+# Skill: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/SKILL.md
 
 # x-* extension keys are ignored by Docker Compose itself (so this file
 # runs cleanly with `docker compose up`), but install tools that
@@ -19,7 +19,7 @@ x-mcp-service-meta:
   spec: "compose-x-mcp-services/v1"
   version: "4.1.22"
   dashboard_url: http://127.0.0.1:18092/
-  skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/SKILL.md
+  skill_url: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/SKILL.md
   required_keys: []
   optional_keys:
     - { name: TOGETHER_API_KEY, purpose: "narrative LLM (Together google/gemma-4-31B-it — serverless, ~100 tok/s, ~$0.0008/1k tokens). MiniMax-M2 moved off serverless tier 2026-05; pick a dedicated endpoint if you want it." }

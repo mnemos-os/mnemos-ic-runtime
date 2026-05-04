@@ -1,132 +1,344 @@
-# mnemos-ic-runtime
+<p align="center">
+  <img src="assets/investorclaw-logo.svg" alt="InvestorClaw" width="192">
+</p>
 
-Container bridge for **InvestorClaw 4.1.22** — the InvestorClaw application
-service that pairs `ic-engine` (Python, FINOS CDM 5.x portfolio analysis)
-with `mnemos-rs` (Rust, sqlite-backed memory).
+# InvestorClaw
 
-This repo owns:
-- The `ic-engine:4.1.25-cpu` container Dockerfile (Python 3.12 + uv +
-  `argonautsystems/ic-engine` ic-engine pinned by SHA + bridge code)
-- The `docker-compose.yml` wiring `mnemos-rs` + `ic-engine` together with
-  `x-mcp-services` extension keys describing the MCP server manifest
-- The `MnemosClient` bridge code (Python: HTTP client to mnemos-rs; matches
-  the Rust trait in `mnemos-os/mnemos-rs`)
-- The dashboard web UI static files served at `:8092` by the ic-engine
-  container
-- The bundle.json schema + import/export logic
-- The MIT-0-licensed distribution-edge artifacts: `compose.yml`, `install.yaml`,
-  `SKILL.md` (published to ClawHub at https://clawhub.ai and served raw via
-  https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml)
+> Deterministic-first portfolio analysis. Real money math, no LLM math.
 
-## What this is NOT
+Portfolio analysis and market intelligence for any MCP-capable agent.
 
-- Not the ic-engine source code (that's `argonautsystems/ic-engine`, hand-authored
-  by the maintainer)
-- Not the mnemos-rs source code (that's `mnemos-os/mnemos-rs`, in flight)
-- Not the mnemos Python server (that's `mnemos-os/mnemos`)
+v4.1.x | Apache 2.0 + MIT-0 | Educational Use Only
 
-## Quick start
+InvestorClaw v4.x is a containerized portfolio analyzer that runs as a
+Docker Compose stack and exposes its tools over MCP-HTTP at
+`localhost:18090`. Any MCP-capable agent — Claude Code, Claude Desktop,
+openclaw, zeroclaw, hermes — connects as a thin client. No Python
+install on the agent side, no per-runtime plugin shim, no
+language-specific bootstrap.
+
+## Other variants
+
+- **InvestorClaude** (Claude Code marketplace plugin, v2.6.x — in-process
+  via uv): see [argonautsystems/InvestorClaude](https://github.com/argonautsystems/InvestorClaude).
+
+## Features
+
+InvestorClaw analyzes multi-account portfolios with deterministic
+Python computation. The agent presents the engine narrator's
+HMAC-signed envelope answer; it does not guess financial metrics.
+
+- Holdings snapshots for what you own and where you own it
+- Performance metrics for returns, Sharpe + Sortino ratios, max
+  drawdown, beta, value-at-risk
+- Bond analytics for yield-to-maturity, duration, credit quality, and
+  ladders
+- Analyst consensus and price targets on portfolio holdings
+- Today's news on holdings and market-wide topics (per-symbol +
+  general / forex / crypto / merger categories)
+- Portfolio synthesis, optimization, target allocation, drift, scenarios
+- Direct ingestion from CSV, XLS, XLSX, PDF, and broker screenshots
+- **End-of-day report generation** for daily summaries
+- **Stonkmode** — narrated commentary mode with rotating fictional
+  cable-finance personalities (Dr. Stonk, Mission Control, 30+ personas)
+- Educational guardrails; no investment advice
+
+## Quick Start
 
 ```bash
-# One-shot install (after Docker / Podman is available):
-docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml up -d
-
-# Open the dashboard:
-open http://127.0.0.1:18092/
-
-# Connect your agent: see SKILL.md for per-agent config blocks
+git clone https://github.com/mnemos-os/mnemos-ic-runtime.git ~/.investorclaw
+cd ~/.investorclaw
+mkdir -p portfolios     # IMPORTANT: pre-create so docker doesn't auto-create as root
+docker compose up -d    # uses the bundled compose.yml
 ```
 
-For zeroclaw on master:
+That's it. The compose pulls
+`ghcr.io/argonautsystems/ic-engine:4.1.25-cpu` (publicly hosted, no
+auth) and runs it on `localhost:18090` (MCP + REST) and
+`localhost:18092` (dashboard).
 
-```bash
-zeroclaw services install https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml
+After the container reports `init_state: ready`, ask your first
+question through your agent:
+
+```text
+What's in my portfolio?
 ```
 
-## Architecture
+Connect your agent — see [SKILL.md](SKILL.md) for per-runtime config
+blocks (Claude Code, Claude Desktop, openclaw, zeroclaw, hermes).
 
-- **[docs/INSTALL_MODELS.md](docs/INSTALL_MODELS.md)** — *why* the v4.x
-  architecture splits along two install models (dockerized-skill for the
-  claw runtimes today; native-workspace SKILL.md for Claude Code once the
-  marketplace path is live) and what the contract between them is.
-- **[docs/COBOL_TESTING.md](docs/COBOL_TESTING.md)** — *why* we built the
-  Agentic COBOL 250-prompt regression suite, what the strict verdict
-  catches that no other test layer can, and how it's the v4.x ship gate.
-  Long-form rationale published at
-  [techbroiler.net/all-our-tests-passed-the-agent-was-still-broken](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/).
-- **[RFC-v0.1.md](RFC-v0.1.md)** — full v4.x architecture specification.
+## Prepare Your Portfolio
 
-```
-HOST
-┌──────────────────────────────────────────────┐
-│  docker compose:                             │
-│  ┌──────────┐         ┌──────────────────┐  │
-│  │ mnemos   │ ◀───────│   ic-engine       │  │
-│  │ (rust)   │  HTTP   │  (python 3.12)   │  │
-│  │  :5002   │         │   :8090 (MCP)    │  │
-│  └──────────┘         │   :8092 (dash)   │  │
-│                        └──────────────────┘  │
-│                              ▲                │
-└──────────────────────────────┼────────────────┘
-                               │ MCP-HTTP
-                  ┌────────────┴────────────────┐
-                  │  Claude / zeroclaw / openclaw│
-                  │  / hermes — any MCP client   │
-                  └──────────────────────────────┘
-```
+Export holdings from your broker. CSV offers the highest compatibility.
 
-## Repo layout
+- Schwab: Accounts → Positions → Export CSV
+- Fidelity: NetBenefits → Investments → Download CSV
+- Vanguard: My Accounts → Download Holdings
+- UBS: Wealth Management → Holdings → Export
+- ETrade: Portfolio → Holdings → Download
+- Robinhood: Account → Statements → CSV
 
-```
-mnemos-ic-runtime/
-├── RFC-v0.1.md           # v4.0 architecture document
-├── compose.yml            # MIT-0 — canonical docker-compose with x-mcp-services
-├── install.yaml           # MIT-0 — derived view for shell-tool agents
-├── SKILL.md               # MIT-0 — agent-readable installer instructions
-├── Dockerfile             # Apache 2.0 — ic-engine:4.1.25-cpu image build
-├── bridge/                # Apache 2.0 — Python bridge code (MnemosClient,
-│                          # MCP server wrappers around ic-engine commands,
-│                          # bundle import/export)
-├── dashboard/             # Apache 2.0 — single-page dashboard (vanilla JS
-│                          # or preact, served by bridge at :8092)
-├── tests/                 # Apache 2.0 — bridge tests + compat-test harness
-├── LICENSE                # Apache 2.0 (full text)
-├── LICENSE-MIT-0          # MIT-0 (for distribution-edge files)
-└── README.md              # this file
+Also supported: XLS / XLSX, PDF broker statements, and screenshots of
+broker positions pages. Drop the file into the bind-mounted
+`./portfolios/` directory under your compose project, or attach files
+directly in your agent chat — the agent stages them automatically when
+needed and asks the original question through `portfolio_ask`.
+
+## Run Analysis
+
+Ask in natural language. Your agent will route through `portfolio_ask`.
+
+```text
+What's in my portfolio?
+How am I doing this year?
+Show me my bond exposure and yield-to-maturity.
+What's my Sharpe ratio?
+What's my sector exposure?
+Help me rebalance to a 60/40 target.
+What is the current price of NVDA?
+Today's news on my holdings.
 ```
 
-## Licensing
+### End-of-day report
 
-| Artifact | License |
+```text
+Generate today's EOD report.
+```
+
+The engine produces a daily summary covering holdings, performance,
+bonds, analyst consensus, news, cashflow projections, and synthesis.
+Reports land in `./reports/YYYY-MM-DD/` on the host. Send the report
+to your advisor, archive it, or pass it back to the agent for
+follow-up questions.
+
+### Stonkmode (narrated commentary)
+
+Stonkmode wraps portfolio output in commentary from a randomly-selected
+pair of fictional cable-finance TV personalities (a "lead" and a
+"foil"). The deterministic analysis runs unchanged — only the narrator
+voice changes.
+
+```text
+Switch to stonkmode.
+What's in my portfolio?
+```
+
+The dashboard at `localhost:18092` exposes a `--stonkmode on/off`
+toggle, a Mission Control side panel with Dr. Stonk avatars (30+
+personas, WebP-embedded for offline use), a soundboard, and a
+Captain's Log. State persists in `~/.investorclaw/stonkmode.json`.
+
+### Fresh data
+
+Force a fresh pipeline run when news, prices, or portfolio files may
+have moved:
+
+```text
+Refresh my portfolio.
+```
+
+## Available MCP Tools (12 Total)
+
+| Tool | Purpose |
 |---|---|
-| Container code, bridge, dashboard, tests | Apache 2.0 |
-| `SKILL.md`, `install.yaml`, `compose.yml`, `agent-skills/**` (distribution edge) | MIT-0 |
+| **`portfolio_ask`** | **Primary tool — every portfolio question. Data is auto-loaded; just ask.** |
+| `portfolio_initialize_status` | Poll before first ask: returns init `state` + per-stage progress |
+| `portfolio_initialize` | Force a manual bootstrap (setup → refresh → seed ask) |
+| `portfolio_holdings` | Holdings snapshot (advanced; `portfolio_ask` covers this) |
+| `portfolio_refresh` | Force fresh data pull (auto-refresh runs on every ask) |
+| `portfolio_setup` | Auto-discover portfolio files in the configured directory |
+| `portfolio_keys_status` | Report which API keys are currently configured |
+| `portfolio_keys_set` | Set one or more API keys (allowlisted) |
+| `portfolio_keys_delete` | Delete a single configured API key by name |
+| `portfolio_response_get` | Retrieve a stored portfolio response by run_id |
+| `portfolio_response_list` | List recent stored responses |
+| `portfolio_response_delete` | Permanently delete a stored response |
 
-Per-file `SPDX-License-Identifier` headers indicate the applicable
-license. The `compose.yml` + `install.yaml` + `SKILL.md` are intentionally
-MIT-0 (MIT No Attribution) — required by ClawHub schema and a deliberate
-choice to permit frictionless redistribution through agent skill marketplaces
-(ClawHub, Claude Code marketplace) without an Apache NOTICE-file overhead.
+All 12 tools also have plain-HTTP REST endpoints at
+`http://127.0.0.1:18090/api/portfolio/*` — useful when MCP integration
+is flaky or you want to drive the engine from a shell.
 
-The substantive code (bridge, dashboard, ic-engine source it pulls in) is
-Apache 2.0. The patent grant and NOTICE requirements apply there as
-normal.
+## Power-User Endpoints
 
-## Contributing
+These REST endpoints don't compete with `portfolio_ask` for routing
+but are available for power users:
 
-- Bug fixes / CI / docs: PRs welcome
-- Architectural changes: file an RFC under `docs/RFC-v<n>.md` first; use
-  the v0.1 RFC as a template
-- ic-engine source changes: contribute upstream at
-  `argonautsystems/ic-engine`; this repo just packages it
-- mnemos-rs changes: contribute upstream at `mnemos-os/mnemos-rs`
+| Endpoint | Use for |
+|---|---|
+| `GET /healthz` | Liveness + init state probe |
+| `GET /api/portfolio/initialize/status` | Init progress JSON |
+| `GET /api/portfolio/initialize/stream` | SSE stream of init state changes |
+| `GET /api/portfolio/tools` | Self-describing tool catalog |
+| `POST /api/portfolio/keys_set` | Set provider keys without restart |
+
+The `dashboard` at `localhost:18092` is a single-page HTML UI with
+tabs for Holdings · Performance · Bonds · Analyst · News · Cashflow ·
+Optimize · Synthesis · What-changed · Tax · Scenarios · Peer · Reports
+· Settings · About.
+
+## Recommended Model Combinations
+
+InvestorClaw uses two LLM roles when answering: **narrative**
+(synthesizes the signed envelope into prose) and **validator** (checks
+the narrative against the envelope for fabrication and number
+preservation).
+
+### Claude Code / Claude Desktop
+
+The agent's own Anthropic LLM does both — no external API key needed.
+
+- **Narrative**: Haiku 4.5 — fast, cheap, ~10× lower output cost than
+  Sonnet. With a clean signed envelope, narrative synthesis is mostly
+  transcription.
+- **Validator**: Sonnet 4.6 (default) or Opus 4.7 (escalation) — gates
+  Haiku's output for fabrication, mis-quoted numbers, training-leak
+  drift.
+
+Cost-shaped: cheap model on the long output, smart model on the short
+safety check. Total session cost on a 100-position portfolio typically
+lands well under $0.01.
+
+### openclaw / zeroclaw / hermes
+
+Bring a non-Anthropic provider via `TOGETHER_API_KEY` (or equivalent).
+Anthropic on the claws stack is a paid-API-only path since 2026-04-04
+(OAuth-subscription tokens against a claws-agent runtime violate
+Anthropic's ToS). Fleet defaults:
+
+- **Default narrative**: Together AI `google/gemma-4-31B-it` —
+  serverless, ~100 tok/s, ~$0.0008 / 1 K tokens. Container default.
+- **Higher-quality alternative**: Together AI `MiniMaxAI/MiniMax-M2` —
+  larger context, but moved off Together's serverless tier 2026-05;
+  requires a paid dedicated endpoint.
+- **Local-only / offline**: Ollama `gemma4:e4b` on host — zero cloud
+  cost, GPU-bound, no key required.
+
+## Recommended API Keys by Portfolio Size
+
+| Size | Required | Recommended | Why |
+|---|---|---|---|
+| **≤ 50 symbols** | `TOGETHER_API_KEY` (narrative) | — | yfinance handles quotes/history at this scale |
+| **50–200 symbols** | `TOGETHER_API_KEY` | `FINNHUB_KEY` (free 60/min) + `NEWSAPI_KEY` (free 100/day) | Real-time quotes + analyst + per-symbol news without yfinance throttle |
+| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Polygon, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous endpoint rate-limits globally on 200+ symbols; Polygon is required, the rest fill analyst + news + yields |
+
+`TOGETHER_API_KEY` is the only key that meaningfully changes output
+quality. Everything else is for scale or richness on larger portfolios.
+The deterministic engine works key-less in degraded mode (yfinance-only)
+but the narrator returns stub catalog summaries instead of real prose.
+
+Sign-up links (free tiers exist for everything except Polygon):
+[Together AI](https://api.together.ai/settings/api-keys) ·
+[Finnhub](https://finnhub.io/register) ·
+[Polygon](https://polygon.io/dashboard/api-keys) ·
+[MarketAux](https://www.marketaux.com/account/dashboard) ·
+[NewsAPI](https://newsapi.org/register) ·
+[FRED](https://fred.stlouisfed.org/docs/api/api_key.html) ·
+[Alpha Vantage](https://www.alphavantage.co/support/#api-key)
+
+## How It Works
+
+1. You drop a portfolio (CSV / XLS / PDF / screenshot) into
+   `./portfolios/`, or attach one in your agent chat.
+2. Your agent calls `portfolio_setup` and `portfolio_ask` over MCP-HTTP
+   on `localhost:18090`.
+3. ic-engine pre-runs the deterministic backend pipeline for the
+   question.
+4. The result is stored as an HMAC-signed JSON envelope in
+   `./reports/`.
+5. A strict narrator receives only the signed envelope and the
+   question, quotes verbatim from authoritative sources, and refuses
+   to fabricate missing facts.
+6. Your agent returns the narrative to you.
+
+The first prompt after a cold install can take 30–60 seconds because
+the full deterministic pipeline is building the signed envelope.
+Subsequent prompts are cache-amortized (TTL: 30 s for news, 60 s for
+other sections) unless you call `portfolio_refresh`.
+
+## Data Privacy
+
+Your data stays on your machine by default.
+
+- Raw broker files stay local in `./portfolios/`
+- Account numbers and SSNs are scrubbed on import
+- Only computed summaries and the signed envelope are sent to the
+  configured narrative provider (Together AI by default)
+- InvestorClaw never executes trades, never moves money, never
+  authenticates to any brokerage
+- All analysis is educational and not investment advice
+
+See [PRIVACY.md](PRIVACY.md) for the full data-handling policy and
+[DISCLAIMER.md](DISCLAIMER.md) for the educational-only framing.
+
+## Documentation
+
+- [SKILL.md](SKILL.md) — agent-readable install + usage spec, full
+  12-tool catalog, first-run timeline, REST endpoints, troubleshooting
+- [PRIVACY.md](PRIVACY.md) — full data-handling policy
+- [DISCLAIMER.md](DISCLAIMER.md) — educational-use disclaimer + provider
+  data flows
+- [SECURITY.md](SECURITY.md) — vulnerability disclosure
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow
+- [CHANGELOG.md](CHANGELOG.md) — release history
+- [docs/INSTALL_MODELS.md](docs/INSTALL_MODELS.md) — *why* the v4.x
+  architecture splits along two install models
+- [docs/COBOL_TESTING.md](docs/COBOL_TESTING.md) — the Agentic COBOL
+  250-prompt regression suite that's the v4.x ship gate. Long-form
+  rationale at
+  [techbroiler.net/all-our-tests-passed-the-agent-was-still-broken](https://techbroiler.net/all-our-tests-passed-the-agent-was-still-broken/).
+- [RFC-v0.1.md](RFC-v0.1.md) — full v4.x architecture specification
+
+## Troubleshooting
+
+### "ic-engine container won't start"
+
+```bash
+docker compose logs ic-engine | tail -50
+docker ps | grep ic-engine
+curl -sS http://127.0.0.1:18090/healthz
+```
+
+If `healthz` returns `{"init_state":"failed", ...}`, check the
+`init_error` field for the engine's exact failure message. The most
+common cause is the `portfolios/` directory being root-owned because
+you skipped `mkdir -p portfolios` before `docker compose up -d`.
+
+### "No portfolio found"
+
+Drop a CSV/XLS/PDF into `./portfolios/`, then call setup:
+```bash
+curl -X POST http://127.0.0.1:18090/api/portfolio/setup -d '{}'
+```
+Or attach a file directly in your agent chat.
+
+### "First call is slow (5–15 minutes)"
+
+Only happens on a cold cache for portfolios with 200+ positions. The
+container runs `IC_INITIALIZE_ON_BOOT=1` by default — initialization
+runs at container start, so by the time the agent connects, the cache
+is warm. Check progress:
+`curl http://127.0.0.1:18090/api/portfolio/initialize/status`.
+
+### Reset cache + state
+
+```bash
+docker compose down -v   # removes the data volume — all envelopes lost
+docker compose up -d     # cold restart with auto-init
+```
+
+See [SKILL.md § Troubleshooting](SKILL.md) for the full list.
+
+## Status
+
+Production Ready | Apache 2.0 + MIT-0
+
+InvestorClaw v4.1.x. Portfolio analysis. Educational only. Not
+financial advice.
 
 ## Related repos
 
-| Repo | Owner | Scope |
-|---|---|---|
-| `argonautsystems/ic-engine` | upstream maintainer | ic-engine analytical Python source |
-| `mnemos-os/mnemos` | mnemos-claude | Python server (qdrant, federation, NATS, GRAEAE) |
-| `mnemos-os/mnemos-rs` | this Claude session | Rust desktop port + sqlite substrate |
-| `mnemos-os/mnemosctl` | this Claude session | CLI tool |
-| **`mnemos-os/mnemos-ic-runtime`** (this repo) | this Claude session | bridge + Dockerfile + compose + dashboard |
+| Repo | Scope |
+|---|---|
+| [`mnemos-os/mnemos-ic-runtime`](https://github.com/mnemos-os/mnemos-ic-runtime) (this repo) | v4.x dockerized-skill bundle + Dockerfile + compose + dashboard |
+| [`argonautsystems/ic-engine`](https://github.com/argonautsystems/ic-engine) | ic-engine analytical Python source (pulled into the container at build time) |
+| [`argonautsystems/InvestorClaude`](https://github.com/argonautsystems/InvestorClaude) | v2.6.x Claude Code marketplace plugin (in-process via uv; separate install path) |

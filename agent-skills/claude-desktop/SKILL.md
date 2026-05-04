@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer for Claude Desktop via MCP-HTTP at localhost:18090. Holdings, performance, Sharpe + Sortino, FRED yields, bond duration, scenario rebalancing.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.26","runtime":"claude-desktop","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
+metadata: {"license":"MIT-0","version":"4.1.27","runtime":"claude-desktop","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
 ---
 
 <!--
@@ -117,10 +117,15 @@ safety check.
 - **Localhost-only by default.** Both MCP servers bind to `127.0.0.1`.
   Nothing leaves your machine unless you explicitly enable a remote
   deployment via the dashboard.
-- **No portfolio data flows through Claude Desktop's transcript
-  storage in the clear** — Claude sees structured tool results, not
-  raw broker CSVs. Your CSV files live in the Docker volume on your
-  machine.
+- **What Claude sees vs what stays local.** Claude Desktop's
+  transcript receives the agent's tool-call inputs and outputs — that
+  includes the user's question, the structured `ic_result` envelope
+  (ticker symbols, asset-class breakdowns, computed metrics), and
+  the narrator's prose answer. **It does NOT receive raw broker CSVs**
+  — those stay on your local filesystem in the bind-mounted
+  `./portfolios/` directory. Account numbers and SSNs are scrubbed at
+  ingest. See [PRIVACY.md](../../PRIVACY.md) for the full data-flow
+  matrix.
 - **Unknown CSV format?** The engine returns a structured error with
   detected columns. Claude will direct you to the column-mapping
   wizard at `http://localhost:18092/portfolios/map` rather than

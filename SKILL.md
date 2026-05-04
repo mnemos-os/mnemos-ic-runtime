@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.26","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.27","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -96,16 +96,27 @@ The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.25-cpu` (publicly hoste
 
 ### If Docker isn't installed
 
-Use the agent's shell tool to install:
+Install Docker Desktop or Docker Engine for your platform — **the user
+should run the install themselves** rather than have an agent execute
+the command. Pointers (verify with each OS's current docs at
+<https://docs.docker.com/engine/install/> before running):
 
-| OS | Command |
+| OS | Suggested path |
 |---|---|
-| **macOS** | `brew install --cask docker` then start Docker.app |
-| **Debian/Ubuntu** | `apt-get install -y docker.io docker-compose-plugin` (or follow https://docs.docker.com/engine/install/) |
-| **Fedora/RHEL** | `dnf install -y docker-ce docker-compose-plugin && systemctl start docker` |
-| **Podman alternative** | `podman compose up -d` (drop-in replacement on most distros) |
+| **macOS** | Docker Desktop: <https://docs.docker.com/desktop/install/mac-install/> (Homebrew users: `brew install --cask docker`) |
+| **Debian/Ubuntu** | Follow the official guide: <https://docs.docker.com/engine/install/debian/> or <https://docs.docker.com/engine/install/ubuntu/> |
+| **Fedora/RHEL** | <https://docs.docker.com/engine/install/fedora/> or <https://docs.docker.com/engine/install/rhel/> |
+| **Windows** | Docker Desktop with WSL2 backend: <https://docs.docker.com/desktop/install/windows-install/> |
+| **Podman alternative** | `podman compose up -d` is a drop-in replacement once Podman is installed (most distros ship it) |
 
-After install, verify with `docker --version` then run the compose-up command.
+After install, verify with `docker --version` then run the compose-up
+command above.
+
+**For agent operators:** prefer surfacing these install URLs to the
+end user rather than running package-manager install commands directly
+through your shell tool. Docker installation typically requires sudo
+and adds the user to the `docker` group — operations that benefit from
+explicit user consent.
 
 ### Wait for ready
 

@@ -41,7 +41,7 @@ containers once:
 
 ```sh
 mkdir -p ~/.investorclaw
-curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/compose.yml > ~/.investorclaw/compose.yml
 cd ~/.investorclaw && docker compose up -d
 ```
 

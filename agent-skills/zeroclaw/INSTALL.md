@@ -42,7 +42,7 @@ directory — they are documentation, not part of the audited payload.
 
 ```
 mkdir -p ~/.investorclaw
-curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml \
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/compose.yml \
   > ~/.investorclaw/compose.yml
 cd ~/.investorclaw
 docker compose up -d
@@ -127,7 +127,7 @@ A pending upstream PR adds a `zeroclaw services` subcommand that will
 collapse Steps 2 and 3 into:
 
 ```
-zeroclaw services install https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml
+zeroclaw services install https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/v4.1.27/compose.yml
 ```
 
 This will pull the compose file, run `docker compose up -d`, wait for
