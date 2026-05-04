@@ -69,7 +69,7 @@ That contract is **MCP-HTTP**.
    ┌─────────────────────────────────────────┐
    │  ic-engine container                    │
    │  ────────────────                       │
-   │  ghcr.io/perlowja/ic-engine:4.1.18-cpu  │
+   │  ghcr.io/argonautsystems/ic-engine:4.1.19-cpu  │
    │                                         │
    │  - Python 3.12 venv (uv-managed)        │
    │  - Engine source (ic-engine HEAD)       │
@@ -234,7 +234,7 @@ the same audit trail. The transport changes; the math doesn't.
 **v4.x lifecycle of a bug fix (dockerized-skill):**
 
 1. Fix the bug in `argonautsystems/ic-engine`.
-2. Build + push `ghcr.io/perlowja/ic-engine:X.Y.Z-cpu`.
+2. Build + push `ghcr.io/argonautsystems/ic-engine:X.Y.Z-cpu`.
 3. Bump `compose.yml` image tag in `mnemos-os/mnemos-ic-runtime`.
 4. Each runtime user runs `docker compose pull && docker compose up -d`.
 5. All four runtimes get the fix on the same image SHA.

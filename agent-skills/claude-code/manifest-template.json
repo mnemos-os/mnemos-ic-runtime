@@ -5,7 +5,7 @@
 
   "name": "investorclaw",
   "displayName": "InvestorClaw",
-  "version": "4.1.18",
+  "version": "4.1.19",
   "description": "Portfolio analysis via local Docker service. Adds /ask and /refresh slash commands plus 15 MCP tools for holdings, performance, bonds, optimization, and more. Educational only — never investment advice.",
   "author": {
     "name": "InvestorClaw Contributors",
@@ -56,7 +56,7 @@
     "investorclaw": {
       "transport": "http",
       "url": "http://127.0.0.1:8090/mcp",
-      "// note": "Portfolio analysis tools. Service runs in user's Docker (mnemos-os/ic-engine:4.1.18-cpu)."
+      "// note": "Portfolio analysis tools. Service runs in user's Docker (mnemos-os/ic-engine:4.1.19-cpu)."
     },
     "mnemos": {
       "transport": "http",

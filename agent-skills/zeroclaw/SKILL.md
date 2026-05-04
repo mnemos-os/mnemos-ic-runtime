@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer for ZeroClaw via MCP-HTTP at localhost:18090. Holdings, performance, Sharpe + Sortino, FRED yields, bond duration, scenario rebalancing.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.18","runtime":"zeroclaw","image":"ghcr.io/perlowja/ic-engine:4.1.18-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
+metadata: {"license":"MIT-0","version":"4.1.19","runtime":"zeroclaw","image":"ghcr.io/argonautsystems/ic-engine:4.1.19-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
 ---
 
 <!--
@@ -46,7 +46,7 @@ agent startup. No skill code, no shell-out, no per-tool wiring.
 The two services run as a Docker compose stack, bound to localhost:
 
 - `mnemos-os/mnemos-rs:4.2` → `127.0.0.1:5002`
-- `mnemos-os/ic-engine:4.1.18-cpu` → `127.0.0.1:18090`
+- `mnemos-os/ic-engine:4.1.19-cpu` → `127.0.0.1:18090`
 
 If the user has not installed yet, see `INSTALL.md` in this skill
 directory for ordered setup. zeroclaw cannot install the service from
