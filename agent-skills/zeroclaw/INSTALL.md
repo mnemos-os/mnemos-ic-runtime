@@ -42,7 +42,7 @@ directory — they are documentation, not part of the audited payload.
 
 ```
 mkdir -p ~/.investorclaw
-curl -sSL https://get.investorclaw.app/v4.0/compose.yml \
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml \
   > ~/.investorclaw/compose.yml
 cd ~/.investorclaw
 docker compose up -d
@@ -53,13 +53,13 @@ This starts two containers bound to localhost:
 | Container | Image | Port |
 | --- | --- | --- |
 | mnemos | `mnemos-os/mnemos-rs:4.2` | `127.0.0.1:5002` |
-| ic-engine | `mnemos-os/ic-engine:4.0` | `127.0.0.1:8090` |
+| ic-engine | `mnemos-os/ic-engine:4.0` | `127.0.0.1:18090` |
 | dashboard (optional) | bundled | `127.0.0.1:8092` |
 
 Wait for health:
 
 ```
-curl -fsS http://127.0.0.1:8090/healthz
+curl -fsS http://127.0.0.1:18090/healthz
 curl -fsS http://127.0.0.1:5002/healthz
 ```
 
@@ -73,7 +73,7 @@ Open `~/.zeroclaw/config.toml` and merge in the block from
 ```toml
 [mcp.servers.investorclaw]
 transport = "http"
-url = "http://127.0.0.1:8090/mcp"
+url = "http://127.0.0.1:18090/mcp"
 
 [mcp.servers.mnemos]
 transport = "http"
@@ -127,7 +127,7 @@ A pending upstream PR adds a `zeroclaw services` subcommand that will
 collapse Steps 2 and 3 into:
 
 ```
-zeroclaw services install https://get.investorclaw.app/v4.0/compose.yml
+zeroclaw services install https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml
 ```
 
 This will pull the compose file, run `docker compose up -d`, wait for

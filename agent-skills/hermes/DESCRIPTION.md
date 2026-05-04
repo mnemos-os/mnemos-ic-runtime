@@ -2,7 +2,7 @@
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This DESCRIPTION.md is MIT-licensed. It is the short skill-catalog
+This DESCRIPTION.md is MIT-0-licensed. It is the short skill-catalog
 entry hermes 0.12+ surfaces in `skills_list` / `skill_view`. The
 underlying InvestorClaw service is Apache 2.0.
 -->

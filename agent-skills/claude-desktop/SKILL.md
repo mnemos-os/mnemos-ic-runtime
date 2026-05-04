@@ -10,14 +10,14 @@ metadata: {"license":"MIT-0","version":"4.1.17","runtime":"claude-desktop","imag
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This SKILL.md is MIT-licensed. The InvestorClaw service it connects to is
+This SKILL.md is MIT-0-licensed. The InvestorClaw service it connects to is
 Apache 2.0. See ../../LICENSE-MIT for the full MIT text.
 -->
 
 # InvestorClaw — Claude Desktop Reference
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This reference doc is MIT-licensed; the underlying service is Apache 2.0.
+> This reference doc is MIT-0-licensed; the underlying service is Apache 2.0.
 
 ## What this is
 
@@ -127,4 +127,4 @@ unexpected result, the issue is in the service
 ([`perlowja/InvestorClaw`](https://github.com/perlowja/InvestorClaw),
 Apache 2.0) or in the runtime bridge
 ([`mnemos-os/mnemos-ic-runtime`](https://github.com/mnemos-os/mnemos-ic-runtime),
-Apache 2.0), not in this MIT-licensed reference doc.
+Apache 2.0), not in this MIT-0-licensed reference doc.

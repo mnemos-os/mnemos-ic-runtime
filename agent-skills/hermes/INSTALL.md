@@ -2,7 +2,7 @@
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This INSTALL.md is MIT-licensed. Targets NousResearch Hermes Agent
+This INSTALL.md is MIT-0-licensed. Targets NousResearch Hermes Agent
 v0.12 or later. Underlying InvestorClaw service is Apache 2.0.
 -->
 
@@ -49,7 +49,7 @@ The service is two containers in a single compose file:
 
 ```bash
 mkdir -p ~/.investorclaw
-curl -sSL https://get.investorclaw.app/v4.0/compose.yml \
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml \
   > ~/.investorclaw/compose.yml
 cd ~/.investorclaw && docker compose up -d
 ```
@@ -57,7 +57,7 @@ cd ~/.investorclaw && docker compose up -d
 Wait for both containers to report healthy:
 
 ```bash
-curl -fsS http://127.0.0.1:8090/healthz   # ic-engine
+curl -fsS http://127.0.0.1:18090/healthz   # ic-engine
 curl -fsS http://127.0.0.1:5002/healthz   # mnemos-rs
 ```
 
@@ -75,7 +75,7 @@ Open `~/.hermes/config.yaml` and merge in the contents of
 mcp_servers:
   investorclaw:
     transport: http
-    url: http://127.0.0.1:8090/mcp
+    url: http://127.0.0.1:18090/mcp
   mnemos:
     transport: http
     url: http://127.0.0.1:5002/mcp
@@ -104,7 +104,7 @@ Verify hermes sees the new servers:
 
 ```bash
 hermes mcp list
-# Expected: investorclaw  http  http://127.0.0.1:8090/mcp  connected
+# Expected: investorclaw  http  http://127.0.0.1:18090/mcp  connected
 #           mnemos        http  http://127.0.0.1:5002/mcp  connected
 ```
 
@@ -148,7 +148,7 @@ tool natively.
 4. Confirm the service is up:
    `docker ps | grep -E 'ic-engine|mnemos'` should show two
    `Up` rows. If not, `cd ~/.investorclaw && docker compose up -d`.
-5. Confirm health: `curl -fsS http://127.0.0.1:8090/healthz` and
+5. Confirm health: `curl -fsS http://127.0.0.1:18090/healthz` and
    `curl -fsS http://127.0.0.1:5002/healthz` both 200.
 
 **Tools appear but `portfolio_ask` returns "no portfolio loaded".**

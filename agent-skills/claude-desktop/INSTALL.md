@@ -2,7 +2,7 @@
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This INSTALL.md is MIT-licensed. The InvestorClaw service it installs is
+This INSTALL.md is MIT-0-licensed. The InvestorClaw service it installs is
 Apache 2.0. See ../../LICENSE-MIT for the full MIT text.
 -->
 
@@ -39,7 +39,7 @@ your Compose plugin isn't installed — fix that before continuing.
 
 ```bash
 mkdir -p ~/.investorclaw
-curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml
 ```
 
 On Windows, run this in PowerShell or Git Bash. The `~` expands to
@@ -57,7 +57,7 @@ starts are near-instant. Confirm both containers are healthy:
 
 ```bash
 docker compose ps
-curl -fsS http://127.0.0.1:8090/healthz && echo " ic-engine OK"
+curl -fsS http://127.0.0.1:18090/healthz && echo " ic-engine OK"
 curl -fsS http://127.0.0.1:5002/healthz && echo " mnemos OK"
 ```
 
@@ -82,7 +82,7 @@ This is where Claude Desktop learns about the two MCP servers.
   "mcpServers": {
     "investorclaw": {
       "transport": "http",
-      "url": "http://127.0.0.1:8090/mcp"
+      "url": "http://127.0.0.1:18090/mcp"
     },
     "mnemos": {
       "transport": "http",
@@ -112,7 +112,7 @@ Add the two new entries alongside the existing one:
     "filesystem": { "command": "...", "args": ["..."] },
     "investorclaw": {
       "transport": "http",
-      "url": "http://127.0.0.1:8090/mcp"
+      "url": "http://127.0.0.1:18090/mcp"
     },
     "mnemos": {
       "transport": "http",

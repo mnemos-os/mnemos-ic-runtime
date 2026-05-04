@@ -10,7 +10,7 @@ metadata: {"license":"MIT-0","version":"4.1.17","runtime":"zeroclaw","image":"gh
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This SKILL.md is MIT-licensed. The InvestorClaw service it connects to is
+This SKILL.md is MIT-0-licensed. The InvestorClaw service it connects to is
 Apache 2.0. See the project LICENSE-MIT for full text.
 
 This skill is audit-compliant for zeroclaw 0.7.3+: no scripts, no
@@ -46,7 +46,7 @@ agent startup. No skill code, no shell-out, no per-tool wiring.
 The two services run as a Docker compose stack, bound to localhost:
 
 - `mnemos-os/mnemos-rs:4.2` → `127.0.0.1:5002`
-- `mnemos-os/ic-engine:4.0` → `127.0.0.1:8090`
+- `mnemos-os/ic-engine:4.1.17-cpu` → `127.0.0.1:18090`
 
 If the user has not installed yet, see `INSTALL.md` in this skill
 directory for ordered setup. zeroclaw cannot install the service from

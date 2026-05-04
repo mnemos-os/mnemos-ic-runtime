@@ -16,7 +16,7 @@ two native MCP-HTTP servers. Total setup is five steps.
   install relies on.
 - **Docker** (or Podman with `docker` shim) — verify with
   `docker --version`. The compose file uses Docker Compose v2 syntax.
-- A free pair of loopback ports: `8090` (investorclaw) and `5002`
+- A free pair of loopback ports: `18090` (investorclaw) and `5002`
   (mnemos). Also `8092` for the dashboard.
 
 ## Step 1 — Install the InvestorClaw service
@@ -25,7 +25,7 @@ Stage the compose file and start the stack:
 
 ```bash
 mkdir -p ~/.investorclaw
-curl -sSL https://get.investorclaw.app/v4.0/compose.yml \
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml \
   > ~/.investorclaw/compose.yml
 cd ~/.investorclaw && docker compose up -d
 ```
@@ -33,7 +33,7 @@ cd ~/.investorclaw && docker compose up -d
 Wait for the health endpoints to come up:
 
 ```bash
-curl -fsS http://127.0.0.1:8090/healthz   # investorclaw / ic-engine
+curl -fsS http://127.0.0.1:18090/healthz   # investorclaw / ic-engine
 curl -fsS http://127.0.0.1:5002/healthz   # mnemos
 ```
 
@@ -49,7 +49,7 @@ Use the validated `openclaw mcp set` CLI. **Do not edit
 openclaw mcp set \
   --name investorclaw \
   --transport http \
-  --url http://127.0.0.1:8090/mcp
+  --url http://127.0.0.1:18090/mcp
 
 openclaw mcp set \
   --name mnemos \
@@ -106,12 +106,12 @@ needed — the next invocation reads the updated config.
 
 ```bash
 openclaw agent \
-  --to +1XXXXXXXXXX \
+  --to "$YOUR_OPENCLAW_CHANNEL_TARGET" \
   --message "What is in my portfolio?"
 ```
 
 The LLM should pick the `investorclaw.portfolio_holdings` tool from its
-schema, call the MCP server at `127.0.0.1:8090/mcp`, and return a
+schema, call the MCP server at `127.0.0.1:18090/mcp`, and return a
 structured summary. If you don't yet have a portfolio file uploaded, the
 tool will return a structured "no portfolio detected" envelope — open
 the dashboard at `http://localhost:8092/` to upload one.

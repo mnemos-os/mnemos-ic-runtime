@@ -11,7 +11,7 @@
 
 version: "4.0"
 spec: "compose-x-mcp-services-install/v1"
-target_compose: https://get.investorclaw.app/v4.0/compose.yml
+target_compose: https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml
 dashboard_url: http://127.0.0.1:8092/
 preferred_agents: [claude, zeroclaw]
 supported_agents: [openclaw, hermes]
@@ -27,10 +27,10 @@ prerequisites:
 
 steps:
   - id: stage_compose
-    description: "Fetch the canonical compose.yml from get.investorclaw.app"
+    description: "Fetch the canonical compose.yml from raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main"
     cmd:
       - "mkdir -p ~/.investorclaw"
-      - "curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml"
+      - "curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml"
     expected_artifact: "~/.investorclaw/compose.yml"
 
   - id: bring_up

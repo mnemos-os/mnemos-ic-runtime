@@ -6,7 +6,7 @@ Copyright 2026 InvestorClaw Contributors
 # InvestorClaw v4.0 — Claude Code Plugin Install
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This plugin is MIT-licensed.
+> This plugin is MIT-0-licensed.
 
 ## Prerequisites
 
@@ -41,19 +41,19 @@ containers once:
 
 ```sh
 mkdir -p ~/.investorclaw
-curl -sSL https://get.investorclaw.app/v4.0/compose.yml > ~/.investorclaw/compose.yml
+curl -sSL https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/main/compose.yml > ~/.investorclaw/compose.yml
 cd ~/.investorclaw && docker compose up -d
 ```
 
 This starts two containers: `mnemos-os/mnemos-rs:4.2` on
 `127.0.0.1:5002` (memory) and `mnemos-os/ic-engine:4.0` on
-`127.0.0.1:8090` (portfolio analysis). First boot pulls ~600 MB of
+`127.0.0.1:18090` (portfolio analysis). First boot pulls ~600 MB of
 images; subsequent boots are instant.
 
 Verify health:
 
 ```sh
-curl -fsS http://127.0.0.1:8090/healthz
+curl -fsS http://127.0.0.1:18090/healthz
 curl -fsS http://127.0.0.1:5002/healthz
 ```
 

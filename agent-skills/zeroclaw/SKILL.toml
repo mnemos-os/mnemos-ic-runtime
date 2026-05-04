@@ -2,7 +2,7 @@
 # Copyright 2026 InvestorClaw Contributors
 #
 # zeroclaw skill manifest for InvestorClaw v4.0.
-# This manifest is MIT-licensed; the InvestorClaw service it points to
+# This manifest is MIT-0-licensed; the InvestorClaw service it points to
 # is Apache 2.0. Audit-compliant for zeroclaw 0.7.3+: metadata only,
 # no scripts, no symlinks, no executable payload.
 
@@ -10,7 +10,7 @@
 name = "investorclaw"
 version = "4.0.0"
 description = "Portfolio analysis and memory via MCP-HTTP. Connects zeroclaw to the InvestorClaw v4.0 service (deterministic engine + mnemos memory) running locally as a Docker compose stack."
-license = "MIT"
+license = "MIT-0"
 homepage = "https://investorclaw.app"
 repository = "https://github.com/perlowja/InvestorClaw"
 authors = ["InvestorClaw Contributors"]

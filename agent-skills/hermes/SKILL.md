@@ -10,7 +10,7 @@ metadata: {"license":"MIT-0","version":"4.1.17","runtime":"hermes","image":"ghcr
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This SKILL.md is MIT-licensed and tailored for the NousResearch Hermes
+This SKILL.md is MIT-0-licensed and tailored for the NousResearch Hermes
 Agent (v0.12+). The InvestorClaw service it connects to is Apache 2.0.
 See LICENSE-MIT in this directory.
 -->
@@ -18,7 +18,7 @@ See LICENSE-MIT in this directory.
 # InvestorClaw — Hermes Skill (v4.0)
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This skill file is MIT-licensed; the underlying service is Apache 2.0.
+> This skill file is MIT-0-licensed; the underlying service is Apache 2.0.
 
 ## TL;DR for hermes operators
 
@@ -72,11 +72,11 @@ What this means in practice for hermes users:
 hermes (host)
   │
   │  config.yaml mcp_servers:
-  │     investorclaw → http://127.0.0.1:8090/mcp
+  │     investorclaw → http://127.0.0.1:18090/mcp
   │     mnemos       → http://127.0.0.1:5002/mcp
   ▼
 Docker compose (~/.investorclaw/compose.yml)
-  ├── mnemos-os/ic-engine:4.0       :8090   portfolio analysis MCP
+  ├── mnemos-os/ic-engine:4.1.17-cpu       :8090   portfolio analysis MCP
   └── mnemos-os/mnemos-rs:4.2       :5002   memory + KG MCP
        (dashboard at :8092 for portfolio upload + key config)
 ```
@@ -168,7 +168,7 @@ but worth knowing):
   http://localhost:8092/portfolios/map.
 - **Educational only — never investment advice.** All outputs include
   the disclaimer envelope. Echo it when summarizing.
-- **MCP servers are local by default** at `http://127.0.0.1:8090/mcp`
+- **MCP servers are local by default** at `http://127.0.0.1:18090/mcp`
   and `http://127.0.0.1:5002/mcp`. Remote deployments (Tailscale,
   cloud) just change the URLs — the tool surface is identical.
 - **No portfolio? No problem.** The LLM can talk about generic

@@ -283,7 +283,10 @@ ENV INVESTOR_CLAW_REPORTS_DIR=/data/reports
 ENV INVESTOR_CLAW_DATED_REPORTS=false
 ENV INVESTORCLAW_PORTFOLIO_DIR=/data/portfolios
 
-ENV MNEMOS_BASE=http://mnemos:5002
+# MNEMOS_BASE intentionally NOT baked at image level — it is a compose-time
+# wiring that varies by deployment (compose service name, Tailscale node,
+# external HTTPS endpoint). Operators set it via compose environment or
+# .env at runtime. See compose.yml for the canonical compose-internal value.
 ENV PYTHONUNBUFFERED=1
 
 # Narrative-synthesis defaults — Together AI MiniMax-M2 / gemma4.
@@ -302,16 +305,20 @@ ENV PYTHONUNBUFFERED=1
 ENV INVESTORCLAW_NARRATIVE_PROVIDER=openai_compat
 ENV INVESTORCLAW_NARRATIVE_ENDPOINT=https://api.together.xyz/v1
 ENV INVESTORCLAW_NARRATIVE_MODEL=MiniMaxAI/MiniMax-M2.7
-# Consultation tier (deeper analysis, used by select code paths) — defaults
-# to CERBERUS vLLM when running on the fleet network. Falls back to the
-# narrative endpoint if unreachable. Operator can override per deployment.
-ENV INVESTORCLAW_CONSULTATION_ENABLED=true
-ENV INVESTORCLAW_CONSULTATION_ENDPOINT=http://192.168.207.96:8080
-ENV INVESTORCLAW_CONSULTATION_MODEL=gemma4-consult
-# Hybrid / local-first deployments can override:
-#   INVESTORCLAW_NARRATIVE_ENDPOINT=http://192.168.207.96:11434/v1
+# Consultation tier (deeper analysis, optional — used by select code paths).
+# Disabled by default; falls back to the narrative endpoint when invoked.
+# Operators with their own local-LLM endpoint set
+#   INVESTORCLAW_CONSULTATION_ENABLED=true
+#   INVESTORCLAW_CONSULTATION_ENDPOINT=<their endpoint>
+#   INVESTORCLAW_CONSULTATION_MODEL=<their model>
+# at runtime (env / compose / .env). NOT baked into the image — defaulting
+# the endpoint to a private LAN address would leak fleet topology to public
+# users and never resolve in their network.
+ENV INVESTORCLAW_CONSULTATION_ENABLED=false
+# Hybrid / local-first override examples (NOT defaults):
+#   INVESTORCLAW_NARRATIVE_ENDPOINT=http://localhost:11434/v1     # local Ollama
 #   INVESTORCLAW_NARRATIVE_MODEL=gemma4:e4b
-# (CERBERUS Ollama on the fleet)
+#   INVESTORCLAW_CONSULTATION_ENDPOINT=http://localhost:8080      # local vLLM
 
 EXPOSE 8090 8092
 

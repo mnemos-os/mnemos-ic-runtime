@@ -10,7 +10,7 @@ metadata: {"license":"MIT-0","version":"4.1.17","runtime":"claude-code","image":
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This SKILL.md is MIT-licensed. It describes the Claude Code marketplace
+This SKILL.md is MIT-0-licensed. It describes the Claude Code marketplace
 plugin that connects to InvestorClaw v4.0 (Apache 2.0). The plugin
 ships only this file, INSTALL.md, and a manifest — no Python, no bundle.
 -->
@@ -18,7 +18,7 @@ ships only this file, INSTALL.md, and a manifest — no Python, no bundle.
 # InvestorClaw — Claude Code Plugin (v4.0)
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This plugin is MIT-licensed.
+> This plugin is MIT-0-licensed.
 
 ## What this is
 
@@ -168,7 +168,7 @@ See INSTALL.md for the full bring-up sequence.
 
 ## License + attribution
 
-- This plugin (manifest, SKILL.md, INSTALL.md) is **MIT-licensed**.
+- This plugin (manifest, SKILL.md, INSTALL.md) is **MIT-0-licensed**.
 - The InvestorClaw service it connects to is **Apache 2.0**, hosted at
   `github.com/perlowja/InvestorClaw` and the runtime container at
   `mnemos-os/ic-engine`.
@@ -176,4 +176,4 @@ See INSTALL.md for the full bring-up sequence.
   `mnemos-os/mnemos-rs`.
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This plugin is MIT-licensed.
+> This plugin is MIT-0-licensed.

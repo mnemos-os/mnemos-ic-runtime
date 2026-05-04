@@ -1,7 +1,7 @@
 {
-  "// SPDX-License-Identifier": "MIT",
+  "// SPDX-License-Identifier": "MIT-0",
   "// Copyright": "2026 InvestorClaw Contributors",
-  "// note": "This manifest is MIT-licensed. The InvestorClaw service it points to is Apache 2.0. Schema field names below reflect the Claude Code marketplace conventions as understood at v4.0 release; fields marked TODO need final verification against the published marketplace schema before listing submission.",
+  "// note": "This manifest is MIT-0-licensed. The InvestorClaw service it points to is Apache 2.0. Schema field names below reflect the Claude Code marketplace conventions as understood at v4.0 release; fields marked TODO need final verification against the published marketplace schema before listing submission.",
 
   "name": "investorclaw",
   "displayName": "InvestorClaw",
@@ -11,7 +11,7 @@
     "name": "InvestorClaw Contributors",
     "url": "https://investorclaw.app"
   },
-  "license": "MIT",
+  "license": "MIT-0",
   "homepage": "https://investorclaw.app",
   "repository": "https://github.com/mnemos-os/mnemos-ic-runtime",
 

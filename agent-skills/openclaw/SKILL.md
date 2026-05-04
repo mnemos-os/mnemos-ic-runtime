@@ -10,21 +10,21 @@ metadata: {"license":"MIT-0","version":"4.1.17","runtime":"openclaw","image":"gh
 SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
-This SKILL.md is MIT-licensed. The InvestorClaw service it connects to
+This SKILL.md is MIT-0-licensed. The InvestorClaw service it connects to
 is Apache 2.0. See the InvestorClaw repository for that license.
 -->
 
 # InvestorClaw — Skill (openclaw runtime)
 
 > Powered by [InvestorClaw](https://investorclaw.app) (Apache 2.0).
-> This skill file is MIT-licensed; the underlying service is Apache 2.0.
+> This skill file is MIT-0-licensed; the underlying service is Apache 2.0.
 
 ## What this is
 
 InvestorClaw is a containerized portfolio-analysis service exposed to
 openclaw as **two MCP-HTTP servers**:
 
-- `investorclaw` — portfolio analysis tools at `http://127.0.0.1:8090/mcp`
+- `investorclaw` — portfolio analysis tools at `http://127.0.0.1:18090/mcp`
 - `mnemos` — memory + knowledge graph at `http://127.0.0.1:5002/mcp`
 
 Both run inside a Docker compose stack on the user's machine
@@ -111,7 +111,7 @@ ones that would be hard to recover from re-reading the data.
   the disclaimer envelope. Echo it when summarizing for the user. Do not
   recommend buying, selling, or holding specific securities.
 
-- **The MCP servers run on loopback by default.** `127.0.0.1:8090` and
+- **The MCP servers run on loopback by default.** `127.0.0.1:18090` and
   `127.0.0.1:5002`. If the user deploys remotely (Tailscale VM, cloud
   host), the URLs change but the tool surface is identical.
 
