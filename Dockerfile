@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# InvestorClaw 4.1.21 ic-engine container — bridge image for the v4.1.18 application service
+# InvestorClaw 4.1.22 ic-engine container — bridge image for the v4.1.18 application service
 #
-# Builds: mnemos-os/ic-engine:4.1.21-cpu
+# Builds: mnemos-os/ic-engine:4.1.22-cpu
 # Pairs with: mnemos-os/mnemos-rs:4.2 (over compose bridge network)
 #
 # What's in this container:
@@ -33,10 +33,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl git \
     && rm -rf /var/lib/apt/lists/*
 
-# UV_INSTALL_DIR=/usr/local/bin tells the installer to drop uv directly there;
-# no follow-up symlink needed (and creating one fails because uv already exists).
-ENV UV_INSTALL_DIR=/usr/local/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
+# Install uv from PyPI (the canonical Python toolchain per project policy).
+# Using `pip install uv` rather than the upstream curl|sh installer for two
+# reasons: (1) it goes through PyPI's signed package distribution, not a
+# curl-piped shell script; (2) it's auditable by package scanners that
+# treat shell-pipe installers as untrusted-source.
+RUN python3 -m pip install --no-cache-dir --break-system-packages uv && uv --version
 
 # Clone ic-engine source at the pinned ref
 WORKDIR /build
@@ -336,4 +338,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.1.21"
+LABEL org.opencontainers.image.version="4.1.22"

@@ -295,7 +295,7 @@ def write_summary(
     lines = []
     lines.append(f"# v4.0 cobol barrage — {datetime.datetime.now().isoformat()}")
     lines.append(f"\nEndpoint: `{base}`")
-    lines.append(f"Image: `mnemos-os/ic-engine:4.1.21-cpu-cpu` (1.11 GB)")
+    lines.append(f"Image: `mnemos-os/ic-engine:4.1.22-cpu-cpu` (1.11 GB)")
     lines.append(f"\n## Sequential — {prompts_count} prompts × N={trials}\n")
     lines.append(f"- **Pass:** {pass_seq}/{len(seq)} ({100*pass_seq/max(1,len(seq)):.1f}%)")
     lines.append(f"- **Fail:** {len(fail_seq)}")
