@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer for ZeroClaw via MCP-HTTP at localhost:18090. Holdings, performance, Sharpe + Sortino, FRED yields, bond duration, scenario rebalancing.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.23","runtime":"zeroclaw","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
+metadata: {"license":"MIT-0","version":"4.1.24","runtime":"zeroclaw","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
 ---
 
 <!--
@@ -153,8 +153,14 @@ review. You don't have to script the chain.
 ## Recommended narrative model
 
 zeroclaw routes its chat completions through whichever provider is
-configured in `~/.zeroclaw/config.toml`. **Anthropic models are forbidden**
-on the claws stack (effective 2026-04-04).
+configured in `~/.zeroclaw/config.toml`. **Anthropic on zeroclaw — paid
+path only since 2026-04-04**: routing OAuth-subscription tokens to a
+claws-agent violates Anthropic's ToS per their Apr 3 announcement. To
+use Anthropic models you need either (a) the discounted "extra usage
+bundle" add-on for your subscription, or (b) a direct Anthropic API
+key. Even with paid credits, Anthropic isn't cost-competitive with
+Together for InvestorClaw narrative work; we don't deploy Anthropic on
+our own fleet for zeroclaw.
 
 Recommended providers for the InvestorClaw narrative tier (set
 `TOGETHER_API_KEY` in the container's `portfolios/keys.env` or via
@@ -168,8 +174,8 @@ Recommended providers for the InvestorClaw narrative tier (set
   cost, GPU-bound, no key required.
 
 zeroclaw's own model (separate from InvestorClaw's narrative tier)
-should also avoid Anthropic per the directive — Together MiniMax-M2 is
-the fleet default for both layers.
+follows the same posture — Together MiniMax-M2 is the fleet default for
+both layers; Anthropic remains a paid-API-only opt-in for end users.
 
 ## Important behaviors
 

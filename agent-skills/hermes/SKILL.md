@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer for Hermes via MCP-HTTP at localhost:18090. Holdings, performance, Sharpe + Sortino, FRED yields, bond duration, scenario rebalancing.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.23","runtime":"hermes","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
+metadata: {"license":"MIT-0","version":"4.1.24","runtime":"hermes","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
 ---
 
 <!--
@@ -162,7 +162,13 @@ hermes chat -q "Refresh my market data and show me the worst
 
 hermes routes its chat completions through whichever provider the user
 selects on the command line or in `~/.hermes/config.yaml`. **Anthropic
-models are forbidden** on the claws stack (effective 2026-04-04).
+on hermes — paid path only since 2026-04-04**: routing OAuth-
+subscription tokens to a claws-agent violates Anthropic's ToS per their
+Apr 3 announcement. To use Anthropic models you need either (a) the
+discounted "extra usage bundle" add-on for your subscription, or (b) a
+direct Anthropic API key. Even with paid credits, Anthropic isn't
+cost-competitive with Together for InvestorClaw narrative work; we
+don't deploy Anthropic on our own fleet for hermes.
 
 Recommended providers for the InvestorClaw narrative tier (set
 `TOGETHER_API_KEY` in the container's `portfolios/keys.env` or via

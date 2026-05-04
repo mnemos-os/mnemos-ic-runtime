@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.23","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.24","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -399,9 +399,22 @@ typically lands well under $0.01.
 
 ### openclaw / zeroclaw / hermes
 
-Anthropic models are forbidden on the claws stack (effective 2026-04-04).
-Bring your own provider via `TOGETHER_API_KEY` (or equivalent). Fleet
-defaults:
+**Anthropic on the claws stack — three paths, two of them paid:**
+since 2026-04-04 your Anthropic OAuth subscription no longer covers
+third-party-tool usage. To use Anthropic models on a claws-agent
+runtime you need either (a) Anthropic's discounted "extra usage
+bundles" added to your subscription, or (b) a direct Anthropic API
+key. Routing OAuth-subscription tokens to a claws-agent without one of
+those is a ToS violation per Anthropic's Apr 3 announcement.
+
+Even with paid credits, Anthropic isn't cost-competitive with Together
+for InvestorClaw narrative synthesis (~10–50× the per-token cost).
+**On our own fleet infrastructure we don't deploy Anthropic for these
+runtimes**; end-users should weigh ToS, cost, and quality before
+opting into it.
+
+Bring a non-Anthropic provider via `TOGETHER_API_KEY` (or equivalent).
+Fleet defaults:
 
 - **Default narrative**: Together AI `MiniMaxAI/MiniMax-M2` — cheapest
   tier, large context, ships as the container default.

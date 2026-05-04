@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer for OpenClaw via MCP-HTTP at localhost:18090. Holdings, performance, Sharpe + Sortino, FRED yields, bond duration, scenario rebalancing.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.23","runtime":"openclaw","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
+metadata: {"license":"MIT-0","version":"4.1.24","runtime":"openclaw","image":"ghcr.io/argonautsystems/ic-engine:4.1.22-cpu","mcp-endpoint":"http://localhost:18090/mcp"}
 ---
 
 <!--
@@ -112,7 +112,13 @@ A typical flow:
 
 openclaw's chat completion goes through whichever provider is configured
 in `models.providers.<name>` of `~/.openclaw/openclaw.json`. **Anthropic
-models are forbidden** on the claws stack (effective 2026-04-04).
+on openclaw — paid path only since 2026-04-04**: routing OAuth-
+subscription tokens to a claws-agent violates Anthropic's ToS per their
+Apr 3 announcement. To use Anthropic models you need either (a) the
+discounted "extra usage bundle" add-on for your subscription, or (b) a
+direct Anthropic API key. Even with paid credits, Anthropic isn't
+cost-competitive with Together for InvestorClaw narrative work; we
+don't deploy Anthropic on our own fleet for openclaw.
 
 Recommended:
 
