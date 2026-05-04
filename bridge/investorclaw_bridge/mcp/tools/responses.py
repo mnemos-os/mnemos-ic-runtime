@@ -38,7 +38,7 @@ from .._runtime import logger
 
 # Endpoint + auth — both env-configurable. Defaults match serve.py.
 def _mnemos_base() -> str:
-    return os.environ.get("MNEMOS_BASE", "http://192.168.207.67:5002").rstrip("/")
+    return os.environ.get("MNEMOS_BASE", "http://localhost:5002").rstrip("/")
 
 
 def _mnemos_token() -> str | None:

@@ -60,9 +60,11 @@ services:
       INVESTORCLAW_NARRATIVE_PROVIDER: openai_compat
       INVESTORCLAW_NARRATIVE_ENDPOINT: https://api.together.xyz/v1
       INVESTORCLAW_NARRATIVE_MODEL: MiniMaxAI/MiniMax-M2.7
-      # MNEMOS persistence for portfolio_ask responses. Defaults point at
-      # the fleet PYTHIA endpoint; override for self-hosted deployments.
-      MNEMOS_BASE: http://192.168.207.67:5002
+      # MNEMOS persistence for portfolio_ask responses. Override for your
+      # deployment — typical values: http://mnemos:5002 (compose-internal),
+      # http://localhost:5002 (host-side), or your own MNEMOS endpoint URL.
+      # Leaving unset disables MNEMOS persistence (responses still return).
+      MNEMOS_BASE: ${MNEMOS_BASE:-}
       # Boot-time auto-initialize: container runs setup -> refresh -> seed
       # ask 2s after listeners come up so the envelope cache is warm by
       # the time any agent connects. Set to "0" to disable.

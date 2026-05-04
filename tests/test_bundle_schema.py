@@ -65,7 +65,7 @@ def test_provider_with_raw_key_REJECTS() -> None:
     """
     # Together raw key shape
     with pytest.raises(ValidationError, match="env-var references"):
-        ProviderConfig(api_key_ref="tgp_v1_kTIEvCERoVLAJedqYYGvoMKVzhZJlrhmLRLWDd5V2Yg")
+        ProviderConfig(api_key_ref="tgp_v1_FAKE_TEST_VALUE_NEVER_DEPLOYED_PLACEHOLDER")
 
     # OpenAI raw key shape
     with pytest.raises(ValidationError, match="env-var references"):
