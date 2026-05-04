@@ -1,3 +1,16 @@
+---
+name: investorclaw
+description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
+homepage: https://github.com/argonautsystems/InvestorClaw
+user-invocable: true
+metadata: {"license":"MIT-0","version":"4.1.17","image":"ghcr.io/perlowja/ic-engine:4.1.17-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+---
+
+<!--
+SPDX-License-Identifier: MIT-0
+Copyright 2026 InvestorClaw Contributors
+-->
+
 # InvestorClaw — portfolio analysis skill (v4.0)
 
 A deterministic-first portfolio analyzer that does real money math: holdings
@@ -335,7 +348,7 @@ docker compose -f https://raw.githubusercontent.com/mnemos-os/mnemos-ic-runtime/
 ## License + provenance
 
 - Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
-- Distribution-edge artifacts (this `SKILL.md`, `compose.yml`): MIT
+- Distribution-edge artifacts (this `SKILL.md`, `compose.yml`, `install.yaml`, `agent-skills/**`): **MIT-0** (MIT No Attribution — `LICENSE-MIT-0`). Required for ClawHub plugin publishing; the no-attribution clause means downstream skill registries can re-host without preserving copyright notice.
 - Image: `ghcr.io/perlowja/ic-engine:4.1.17-cpu` (also at `:latest`)
 - RFC: [`~/2026-05-01-dockerized-skill-convention.md`](https://github.com/mnemos-os/mnemos-ic-runtime/blob/main/RFC.md)
 - Cross-project contract: [`mnemos-os/mcp-contracts`](https://github.com/mnemos-os/mcp-contracts)

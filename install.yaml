@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT-0
 # InvestorClaw 4.0 — install spec for shell-tool agents
 # (derived view of compose.yml's x-mcp-services + x-mcp-service-meta keys)
 #

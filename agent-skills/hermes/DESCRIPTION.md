@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: MIT
+SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 
 This DESCRIPTION.md is MIT-licensed. It is the short skill-catalog

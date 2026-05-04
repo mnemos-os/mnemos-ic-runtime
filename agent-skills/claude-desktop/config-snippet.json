@@ -1,7 +1,7 @@
 {
-  "_comment_license": "SPDX-License-Identifier: MIT",
+  "_comment_license": "SPDX-License-Identifier: MIT-0",
   "_comment_copyright": "Copyright 2026 InvestorClaw Contributors",
-  "_comment_about": "Reference snippet for claude_desktop_config.json. MIT-licensed; the InvestorClaw service it connects to is Apache 2.0.",
+  "_comment_about": "Reference snippet for claude_desktop_config.json. MIT-0-licensed (no attribution required); the InvestorClaw service it connects to is Apache 2.0.",
   "_comment_paths": {
     "macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
     "windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
