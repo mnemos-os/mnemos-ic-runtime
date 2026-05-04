@@ -5,7 +5,7 @@ service that pairs `ic-engine` (Python, FINOS CDM 5.x portfolio analysis)
 with `mnemos-rs` (Rust, sqlite-backed memory).
 
 This repo owns:
-- The `ic-engine:4.1.17-cpu` container Dockerfile (Python 3.12 + uv +
+- The `ic-engine:4.1.18-cpu` container Dockerfile (Python 3.12 + uv +
   `argonautsystems/ic-engine` ic-engine pinned by SHA + bridge code)
 - The `docker-compose.yml` wiring `mnemos-rs` + `ic-engine` together with
   `x-mcp-services` extension keys describing the MCP server manifest
@@ -81,7 +81,7 @@ mnemos-ic-runtime/
 ├── compose.yml            # MIT-0 — canonical docker-compose with x-mcp-services
 ├── install.yaml           # MIT-0 — derived view for shell-tool agents
 ├── SKILL.md               # MIT-0 — agent-readable installer instructions
-├── Dockerfile             # Apache 2.0 — ic-engine:4.1.17-cpu image build
+├── Dockerfile             # Apache 2.0 — ic-engine:4.1.18-cpu image build
 ├── bridge/                # Apache 2.0 — Python bridge code (MnemosClient,
 │                          # MCP server wrappers around ic-engine commands,
 │                          # bundle import/export)
