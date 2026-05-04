@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.25","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.26","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -115,6 +115,126 @@ echo "ic-engine ready"
 ```
 
 The first cold-start takes 5-10 seconds (image extract + Python import). Subsequent restarts are <2s.
+
+---
+
+## First-run experience — what to expect
+
+After `docker compose up -d` the container goes through an auto-init
+sequence (`IC_INITIALIZE_ON_BOOT=1`) that warms the envelope cache before
+your agent talks to it. Expect this timeline on a fresh install:
+
+| Phase | Time | What's happening | What you'll see |
+|---|---|---|---|
+| Image extract | 5–30 s | First-time pull of `ic-engine:4.1.25-cpu` (~600 MB) | docker compose progress bars |
+| Bridge boot | 2–3 s | FastMCP server binds `:18090`, dashboard binds `:18092` | `/healthz` returns 200, `init_state: not_started` |
+| `portfolio_setup` | 1–60 s | Auto-discover portfolio files in `./portfolios/` | `init_state: initializing`, `current_stage: setup` |
+| `portfolio_refresh` | 30–120 s | Pull quotes / analyst / news / FRED yields for each symbol | `init_state: initializing`, `current_stage: refresh` |
+| `seed_ask` | 5–60 s | Run a primer ask so the cache is warm | `init_state: initializing`, `current_stage: seed_ask` |
+| **Ready** | — | All sections cached, `portfolio_ask` returns in 1–3 s | `init_state: ready`, `init_ready: true` |
+
+**Total cold-start budget**: ~60-200 s for a 100-position portfolio,
+~5-15 minutes for a 200+ position portfolio without paid quote keys.
+Watch progress via:
+
+```bash
+curl -sS http://127.0.0.1:18090/api/portfolio/initialize/status | jq
+# or stream:
+curl -N http://127.0.0.1:18090/api/portfolio/initialize/stream
+```
+
+### What InvestorClaw asks of you
+
+The container does **not** prompt interactively. It surfaces what it
+needs through structured responses:
+
+1. **A portfolio file.** If `./portfolios/` is empty, every `portfolio_ask`
+   call returns: *"No portfolio file found … please add CSV/Excel/PDF
+   files to your portfolios directory."* Drop a broker export from
+   Schwab / Fidelity / Vanguard / UBS / ETrade / Robinhood (CSV/XLS/PDF/screenshot)
+   into the bind-mounted `./portfolios/` folder, then call
+   `portfolio_setup` to ingest it.
+
+2. **An LLM provider key for narrative synthesis.** Without one, the
+   engine still runs the deterministic pipeline (numbers are correct)
+   but the narrator returns a stub catalog blurb instead of a real
+   prose answer. The container ships pre-configured to use Together AI
+   (`google/gemma-4-31B-it`), so all you need is a `TOGETHER_API_KEY`.
+   Set it with:
+
+   ```bash
+   curl -sS -X POST http://127.0.0.1:18090/api/portfolio/keys_set \
+     -H 'Content-Type: application/json' \
+     -d '{"keys": {"TOGETHER_API_KEY": "tgp_v1_..."}}'
+   ```
+
+   Or drop into the dashboard at http://localhost:18092/ and paste it
+   into the Settings tab.
+
+3. **Optional: data-provider keys** for richer / faster results
+   on larger portfolios (see *Optional configuration → Which keys to
+   obtain (by portfolio size)* below). The engine works key-less in
+   degraded mode (yfinance-only, rate-limited).
+
+### What InvestorClaw recommends — by portfolio size
+
+| Size | Required | Recommended | Why |
+|---|---|---|---|
+| **≤ 50 symbols** | `TOGETHER_API_KEY` (narrative) | — | yfinance handles quotes/history at this scale; one key covers narrative |
+| **50–200 symbols** | `TOGETHER_API_KEY` | `FINNHUB_KEY` (free 60/min) + `NEWSAPI_KEY` (free 100/day) | Real-time quotes + analyst + per-symbol news without yfinance throttle |
+| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Polygon, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous query1 endpoint rate-limits globally on 200+ symbols under barrage; Polygon is required, the rest fill analyst + news + yields |
+
+Why `TOGETHER_API_KEY` is the only hard requirement for narrative:
+
+- Cheapest serverless tier on Together AI (~$0.0008 / 1 K tokens)
+- Default model `google/gemma-4-31B-it` has good quality for portfolio
+  narrative + ~100 tok/s throughput
+- Single key replaces the older multi-tier model setup that v2.x used
+
+Sign-up links (all have free tiers):
+
+| Provider | URL | Free-tier limit |
+|---|---|---|
+| Together AI | https://api.together.ai/settings/api-keys | $1 free credits |
+| Finnhub | https://finnhub.io/register | 60 calls/min |
+| Polygon (Massive) | https://polygon.io/dashboard/api-keys | paid only |
+| MarketAux | https://www.marketaux.com/account/dashboard | 100 calls/day |
+| NewsAPI | https://newsapi.org/register | 100 calls/day |
+| FRED | https://fred.stlouisfed.org/docs/api/api_key.html | unlimited (registration only) |
+| Alpha Vantage | https://www.alphavantage.co/support/#api-key | 25 calls/day |
+
+The `TOGETHER_API_KEY` is the only one that's genuinely required.
+Everything else degrades gracefully.
+
+### First call — what your agent will see
+
+Once `init_state: ready` and a portfolio is loaded, the very first
+`portfolio_ask` call returns a response shaped like:
+
+```json
+{
+  "exit_code": 0,
+  "narrative": "I have holdings summary data in the envelope.\n- bond_pct: 26.76\n- bond_value: 705646.57\n- cash_pct: 1.69\n- equity_pct: 71.55\n- equity_value: 1886470.25\nTop holding symbols: MSFT, NVDA, SCHB, GOOG, AAPL, ...",
+  "ic_result": {
+    "hmac": "75ca79c...",
+    "engine_version": "2.5.2",
+    "command": "ask",
+    "run_id": "299d36b0-..."
+  }
+}
+```
+
+The `narrative` field is the agent-facing answer. The `ic_result`
+contains the HMAC signature that proves the response came from the
+deterministic engine (not LLM-fabricated).
+
+If you see *"is a general finance concept. ic-engine is portfolio-specific"*
+in the narrative for a question that obviously is about your portfolio,
+you're on a pre-v4.1.25 image — pull the latest:
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ---
 
