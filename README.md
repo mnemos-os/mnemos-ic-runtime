@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/investorclaw-logo.svg" alt="InvestorClaw" width="192">
+  <picture>
+    <source srcset="assets/investorclaw-logo.webp" type="image/webp">
+    <img src="assets/investorclaw-logo.jpg" alt="InvestorClaw" width="192">
+  </picture>
 </p>
 
 # InvestorClaw
