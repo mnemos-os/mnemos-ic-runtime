@@ -295,6 +295,13 @@ See [PRIVACY.md](PRIVACY.md) for the full data-handling policy and
   selection → narration)
 - [docs/STONKMODE_AVATAR_LEGEND.md](docs/STONKMODE_AVATAR_LEGEND.md) —
   30-persona avatar reference
+- [docs/MCP_TOOLS_REFERENCE.md](docs/MCP_TOOLS_REFERENCE.md) —
+  detailed per-tool reference for all 12 MCP tools (input / output
+  schemas, latency, cache TTLs, allowlists, examples)
+- [docs/references/](docs/references/) — input / output / schema /
+  consultative-LLM contracts (`contract-input.md`, `contract-output.md`,
+  `schema-holdings-fields.md`, `runtime-gemma4-consult.md`,
+  `presentation-rules.md`, `presentation-nl-query-routing.md`)
 - [docs/INSTALL_MODELS.md](docs/INSTALL_MODELS.md) — *why* the v4.x
   architecture splits along two install models
 - [docs/COBOL_TESTING.md](docs/COBOL_TESTING.md) — the Agentic COBOL

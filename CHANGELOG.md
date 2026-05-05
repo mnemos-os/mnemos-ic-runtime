@@ -9,6 +9,43 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.1.29] — 2026-05-04
+
+### Added
+
+- **Reference / contract specs** ported from v2.6 git history into
+  `docs/references/`:
+  - `contract-input.md` — broker-CSV column mapping (recognized column
+    names, bond metadata extraction from description strings, guided
+    mapping flow)
+  - `contract-output.md` — full output spec (directory layout, envelope
+    format, compact vs full output rules)
+  - `schema-holdings-fields.md` — per-position field reference
+    (security_type, is_etf, financial_type, proxy_symbol)
+  - `runtime-gemma4-consult.md` — gemma4-consult Ollama setup for the
+    optional consultative LLM tier
+  - `presentation-rules.md` — agent presentation contract
+    (preserve numbers, timestamps, freshness; never fabricate)
+  - `presentation-nl-query-routing.md` — natural-language query routing
+    rules (which question shapes go to which analyzer)
+  - All include v4.x adaptation note explaining the slash-command →
+    MCP-tool surface change.
+- **`docs/MCP_TOOLS_REFERENCE.md`** (new) — consolidated detailed
+  reference for all 12 MCP tools (`portfolio_ask`, `portfolio_initialize`,
+  `portfolio_holdings`, `portfolio_refresh`, `portfolio_setup`,
+  `portfolio_keys_*`, `portfolio_response_*`). Per-tool: input schema,
+  output shape, latency profile, cache TTLs, allowlists, example calls,
+  pointers to contracts. Distilled from the ~25 v2.x `claude/commands/ic-*.md`
+  per-slash-command docs into one consolidated file (one doc to maintain
+  rather than 25).
+
+### Changed
+
+- `README.md` Documentation section updated to link the new MCP tools
+  reference and the references directory.
+
+Engine image stays at 4.1.25-cpu (docs-only release).
+
 ## [4.1.28] — 2026-05-04
 
 ### Added

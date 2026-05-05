@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.28","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.29","image":"ghcr.io/argonautsystems/ic-engine:4.1.25-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
