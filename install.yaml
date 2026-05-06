@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT-0
-# InvestorClaw 4.1.34 — install spec for shell-tool agents
+# InvestorClaw 4.1.37 — install spec for shell-tool agents
 # (derived view of compose.yml's x-mcp-services + x-mcp-service-meta keys)
 #
 # Agents with native Docker integration (zeroclaw on master) should use
@@ -9,7 +9,7 @@
 # computer-use, openclaw, hermes) walk this YAML linearly — request user
 # permission per step, execute via shell, report back.
 
-version: "4.1.36"
+version: "4.1.37"
 spec: "compose-x-mcp-services-install/v1"
 # compose.yml is bundled in this skill directory; no remote fetch.
 dashboard_url: http://localhost:18092/

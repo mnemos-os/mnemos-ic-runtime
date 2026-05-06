@@ -9,6 +9,37 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.1.37] — 2026-05-07
+
+### Fixed
+
+- **Narrator routing — first-person performance questions land on
+  portfolio mode.** "How am I doing this year?", "Am I up or down?",
+  "Where do I stand?" used to fall through every routing branch and
+  land on the default concept-deflection (the user got a generic
+  finance disclaimer instead of their portfolio). Verb-anchored
+  signals ("how am i doing", "am i up", "where do i stand", etc.) now
+  route to portfolio strict-mode where they belong. Closes #69.
+- **Narrator routing — install / setup help beats concept-stem.**
+  "How do I install ic-engine?" used to land on concept (the broad
+  "how do i" stem matched first), so users asking how to install got
+  a definition instead of install steps. Setup-style stems now win
+  before the concept-stem fallback. Closes #70.
+
+Both fixes ship with 24 parametrized regression tests covering both
+bugs and prior behavior (strong-ownership, concept-stem, market,
+na-metric, loose ownership). 289 tests pass across narrator + router
++ envelope_cache + command_contracts.
+
+ic-engine commit: `argonautsystems/ic-engine@f4fc5ad`.
+
+### Image
+
+- `ghcr.io/argonautsystems/ic-engine:4.1.37-cpu` (multi-arch amd64
+  + arm64/v8; also at `:latest`). CI pipeline on
+  `gitlab.com/mnemos-os/mnemos-ic-runtime` builds and publishes both
+  arches via docker buildx + QEMU on tag push.
+
 ## [4.1.35] — 2026-05-06
 
 ### Fixed

@@ -340,4 +340,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.1.36"
+LABEL org.opencontainers.image.version="4.1.37"
