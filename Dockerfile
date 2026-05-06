@@ -25,9 +25,15 @@ FROM python:3.12-slim AS builder
 # Default fills in at build time; production builds should pin explicitly.
 # Repo migrated from perlowja/InvestorClaw → argonautsystems/ic-engine
 # (org migration completed in v2.5.1; commit 729dd5d on master).
-# Pinned to gitlab main HEAD which carries the v4.1.25 narrator fix
-# (preserve OWNERSHIP routing when concept-stem matches "what is ").
-ARG IC_ENGINE_REF=main
+# Pinned to ic-engine@11adc63c — v4.1.38 carries:
+#   - narrator routing fixes for #69 (first-person-perf → portfolio)
+#     and #70 (setup beats concept-stem)
+#   - narrator runaway hardening for #51 (token cap, post-truncate,
+#     anti-injection prompts)
+# Bump this SHA + the version label below for each ic-engine source bump
+# so the build is deterministic; CI multi-arch buildx rebuilds both
+# arches against the pinned commit.
+ARG IC_ENGINE_REF=11adc63c00e215c36aef9ffaf985555eb2f83bd6
 ARG IC_ENGINE_REPO=https://gitlab.com/argonautsystems/ic-engine.git
 
 # uv install (canonical Python toolchain per project policy)
@@ -340,4 +346,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.1.37"
+LABEL org.opencontainers.image.version="4.1.38"
