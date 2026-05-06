@@ -13,7 +13,7 @@ Copyright 2026 InvestorClaw Contributors
 - **Docker Desktop** (or Podman + `podman-compose`). Verify with
   `docker --version`. Install:
   - macOS: `brew install --cask docker` (then launch Docker.app once)
-  - Linux: `curl -fsSL https://get.docker.com | sh`
+  - Linux: see `https://docs.docker.com/engine/install/` (do not pipe shell scripts from get.docker.com directly to your shell — download, review, then run)
   - Windows: `winget install Docker.DockerDesktop`
 - **Claude Code** (current release). The plugin assumes the marketplace
   + MCP-server config conventions in effect at v4.0 release.

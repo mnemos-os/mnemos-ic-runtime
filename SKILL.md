@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.35","image":"ghcr.io/argonautsystems/ic-engine:4.1.35-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.36","image":"ghcr.io/argonautsystems/ic-engine:4.1.36-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -18,7 +18,7 @@ snapshots, performance metrics, Sharpe ratios, FRED yield curves, bond
 duration, sector breakdowns, scenario rebalancing. Backed by ic-engine
 (Python, FINOS CDM 5.x compliant).
 
-This skill follows the [`compose-x-mcp-services` convention](https://github.com/mnemos-os/mnemos-ic-runtime) (2026-05-01 RFC). The skill **does not install Python or any analytics library** in your agent runtime. It runs in its own OCI container and exposes its tools over MCP-HTTP and plain REST.
+This skill follows the `compose-x-mcp-services` convention (2026-05-01 RFC; see `RFC-v0.1.md` in this bundle). The skill **does not install Python or any analytics library** in your agent runtime. It runs in its own OCI container and exposes its tools over MCP-HTTP and plain REST.
 
 ---
 
@@ -667,7 +667,7 @@ curl -sS -X POST http://127.0.0.1:18090/api/portfolio/ask \
 ```
 
 If your agent supports compliance testing, vendor `test_mcp_compliance.py`
-from the [`mcp-contracts` repo](https://github.com/mnemos-os/mcp-contracts) into your project, then run:
+from the `mnemos-os/mcp-contracts` GitHub repository into your project, then run:
 
 ```bash
 python3 test_mcp_compliance.py --url http://127.0.0.1:18090/mcp
@@ -813,9 +813,9 @@ privacy model (what stays local vs what goes to which provider) see
 
 - Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
 - Distribution-edge artifacts (this `SKILL.md`, `compose.yml`, `install.yaml`, `agent-skills/**`): **MIT-0** (MIT No Attribution — `LICENSE-MIT-0`). Required for ClawHub plugin publishing; the no-attribution clause means downstream skill registries can re-host without preserving copyright notice.
-- Image: `ghcr.io/argonautsystems/ic-engine:4.1.34-cpu:7f07d516f107260b4518b6ceb7b074761843f0d7abab99d55298215e1d4cc9a9` (also at `:latest`)
-- RFC: [`~/2026-05-01-dockerized-skill-convention.md`](https://github.com/mnemos-os/mnemos-ic-runtime/blob/main/RFC.md)
-- Cross-project contract: [`mnemos-os/mcp-contracts`](https://github.com/mnemos-os/mcp-contracts)
+- Image: `ghcr.io/argonautsystems/ic-engine:4.1.35-cpu@sha256:45a9c5bd2216ec41d6ce8bb89ae224158c668fbe652ee70c8264862c56aec3b4` (multi-arch amd64+arm64; also at `:latest`)
+- RFC: see `RFC-v0.1.md` in this bundle (`mnemos-os/mnemos-ic-runtime` GitHub repository)
+- Cross-project contract: `mnemos-os/mcp-contracts` GitHub repository
 
 ---
 

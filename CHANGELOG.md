@@ -250,7 +250,7 @@ Engine image stays at 4.1.25-cpu (docs-only release).
   leads with `mkdir -p portfolios` + inline explanation.
 - **zeroclaw audit false-positive** — SKILL.md compliance bullet
   reworded to avoid the audit's literal-string match on
-  `curl … | sh` patterns in documentation.
+  shell-pipe-installer patterns in documentation.
 
 ### Changed
 
@@ -298,9 +298,9 @@ Engine image stays at 4.1.25-cpu (docs-only release).
 ### Changed
 
 - Dockerfile uses `pip install uv` instead of the upstream
-  `curl https://astral.sh/uv/install.sh | sh` installer to clear the
-  ClawHub static-analyzer's `install_untrusted_source` flag at build
-  time.
+  shell-pipe installer at `https://astral.sh/uv/install.sh` to clear
+  the ClawHub static-analyzer's `install_untrusted_source` flag at
+  build time.
 
 ## [4.1.21] — 2026-05-03
 

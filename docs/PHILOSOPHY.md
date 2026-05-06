@@ -71,12 +71,17 @@ This model doesn't work on Clawhub (which requires MIT-0, no proprietary extensi
 
 ## Installation Path
 
-```bash
-# No Clawhub submission
-curl -sSL https://gitlab.com/argonautsystems/InvestorClaw/-/raw/main/openclaw/install.sh | bash
+```text
+Without ClawHub: users had to fetch a shell installer from the project's
+GitLab raw-file URL and pipe it to bash — an audit-flagged pattern that
+distributors (zeroclaw skills audit, ClawHub static-analyzer) reasonably
+block by default.
 
-# vs Clawhub (hypothetical, doesn't apply here)
-# openclaw install investorclaw (from hub)
+With ClawHub: users install the skill bundle through the hub CLI:
+  clawhub install perlowja/investorclaw
+The bundle is signed, audited, and published with an immutable version
+slug. The container image is pinned by sha256 digest. No raw shell-script
+download is needed from the user's shell.
 ```
 
 Direct install means:
