@@ -9,6 +9,53 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.1.35] — 2026-05-06
+
+### Fixed
+
+- **Multi-arch publish for arm64 hosts.** v4.1.34 shipped a multi-arch
+  manifest list at `ghcr.io/argonautsystems/ic-engine:4.1.34-cpu`, but
+  the published ClawHub bundle's `compose.yml` and `install.yaml`
+  pinned to the AMD64 sub-manifest digest (`sha256:7f07d516…`). On
+  arm64 hosts (NCZ Reinhardt cixmini boards, Raspberry Pi 5, Apple
+  Silicon, AWS Graviton), `docker compose pull` would fetch the x86
+  binary and fail with `exec format error` at startup.
+- v4.1.35 repins to the **manifest list digest** `sha256:45a9c5bd…`,
+  which resolves per-architecture automatically. amd64 hosts continue
+  to pull the same x86 image; arm64 hosts now pull the
+  `ghcr.io/argonautsystems/ic-engine@sha256:aa87f4809e…` arm64/v8
+  variant transparently.
+
+### Added
+
+- arm64 image natively built on `.66` (NCZ Reinhardt 26.5 cixmini,
+  podman 5.4.2). 1.11 GB, matches the x86 trim exactly. Available at
+  `ghcr.io/argonautsystems/ic-engine:4.1.35-cpu` (and
+  `:4.1.34-cpu-arm64` / `:latest-arm64` single-arch tags for direct
+  platform pinning).
+- Verified end-to-end on .66: container init → ready in 41s, all 13
+  MCP tools registered, all 8 provider keys settable via the
+  `keys_set` REST endpoint, dashboard responsive at port 18092.
+- 30/30 cobol NLQ PASS at 3/3 trials each (90/90 trials, every trial
+  `engine_exit=0` + `has_hmac=true`, p95 latency 28s, median 7s warm).
+  The arm64 result includes p09-optimize-sharpe, the lone holdout
+  from the TYPHON x86 agent-driven 29/30 baseline.
+
+### Notes for arm64 deployment
+
+- **Rootless podman** requires `--userns=keep-id:uid=1000,gid=1000`
+  for `/data/keys.env` permissions. Without that flag, the container
+  runs but reports `init_state: failed` because the engine subprocess
+  cannot chmod its reports directory. Compose-based installs are
+  unaffected (compose handles the user mapping automatically).
+- NCZ Reinhardt 26.5 ships podman 5.4.2 but **does not** include the
+  `docker-compose-cli` plugin. Use raw `podman run` or install
+  `podman-compose` via pip.
+- The skill bundle's `compose.yml` now uses the manifest list digest;
+  any container engine that supports OCI manifest lists (Docker 20+,
+  podman 4+, containerd 1.5+) resolves the per-arch image
+  transparently.
+
 ## [4.1.34] — 2026-05-04
 
 ### Added
