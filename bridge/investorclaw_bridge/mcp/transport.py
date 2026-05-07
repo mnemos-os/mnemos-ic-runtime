@@ -171,6 +171,27 @@ class ImportBody(_BaseModel):
     snapshot: dict[str, Any]
 
 
+class KeysBackupBody(_BaseModel):
+    """Body for /api/portfolio/keys_backup.
+
+    The passphrase encrypts /data/keys.env on disk; without it the
+    backup is unrecoverable. Min 12 chars enforced server-side.
+    """
+    passphrase: str
+    label: str = ""
+
+
+class KeysRestoreBody(_BaseModel):
+    """Body for /api/portfolio/keys_restore.
+
+    `backup_path` is optional — if omitted the most-recently-modified
+    keys-*.bak under /data/backups/ is auto-selected. Relative paths
+    resolve under /data/backups/; traversal outside is rejected.
+    """
+    passphrase: str
+    backup_path: str = ""
+
+
 class ResponseGetBody(_BaseModel):
     """Lookup by run_id (serial number)."""
     run_id: str
@@ -332,6 +353,37 @@ def register_rest_routes(app: Any) -> None:
         overwritten. Re-set API keys via portfolio_keys_set after import.
         """
         return await TOOL_REGISTRY["portfolio_import"]["handler"](body.snapshot)
+
+    # ──────────────────────────────────────────────────────────────────
+    # Encrypted keys backup/restore (#96) — passphrase-encrypted blob
+    # for cross-host migration. Plaintext NEVER traverses these
+    # endpoints — only the passphrase (in the request body) and
+    # filenames/key-names (in the response).
+    # ──────────────────────────────────────────────────────────────────
+
+    @app.post("/api/portfolio/keys_backup")
+    async def rest_keys_backup(body: KeysBackupBody = Body(...)) -> dict[str, Any]:
+        """Encrypt /data/keys.env with a passphrase, write to
+        /data/backups/. Returns filename + key NAMES + KDF — never
+        values."""
+        return await TOOL_REGISTRY["portfolio_keys_backup"]["handler"](
+            passphrase=body.passphrase, label=body.label,
+        )
+
+    @app.post("/api/portfolio/keys_restore")
+    async def rest_keys_restore(body: KeysRestoreBody = Body(...)) -> dict[str, Any]:
+        """Decrypt a backup and replace /data/keys.env. Decrypted
+        values never return to the caller — only the list of restored
+        key NAMES."""
+        return await TOOL_REGISTRY["portfolio_keys_restore"]["handler"](
+            passphrase=body.passphrase, backup_path=body.backup_path,
+        )
+
+    @app.post("/api/portfolio/keys_backups_list")
+    async def rest_keys_backups_list() -> dict[str, Any]:
+        """Enumerate available encrypted backups under /data/backups/.
+        No passphrase required — listing only returns metadata."""
+        return await TOOL_REGISTRY["portfolio_keys_backups_list"]["handler"]()
 
     # Convenience: a GET alias on /api/portfolio/keys/status for browser/dev
     # use. The canonical path remains /api/portfolio/keys_status to match

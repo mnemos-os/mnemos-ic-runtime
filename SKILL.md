@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.39","image":"ghcr.io/argonautsystems/ic-engine:4.1.39-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.1.40","image":"ghcr.io/argonautsystems/ic-engine:4.1.40-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 -->
 
-# InvestorClaw — portfolio analysis skill (v4.1.39)
+# InvestorClaw — portfolio analysis skill (v4.1.40)
 
 A deterministic-first portfolio analyzer that does real money math: holdings
 snapshots, performance metrics, Sharpe ratios, FRED yield curves, bond
@@ -147,7 +147,7 @@ container goes into `init_state=failed`. Pre-creating the directory
 as the host user sidesteps the docker bind-mount UID inheritance
 quirk.
 
-The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.39-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
+The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.40-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
 
 ### If Docker isn't installed
 
@@ -192,7 +192,7 @@ your agent talks to it. Expect this timeline on a fresh install:
 
 | Phase | Time | What's happening | What you'll see |
 |---|---|---|---|
-| Image extract | 5–30 s | First-time pull of `ic-engine:4.1.39-cpu` (~600 MB) | docker compose progress bars |
+| Image extract | 5–30 s | First-time pull of `ic-engine:4.1.40-cpu` (~600 MB) | docker compose progress bars |
 | Bridge boot | 2–3 s | FastMCP server binds `:18090`, dashboard binds `:18092` | `/healthz` returns 200, `init_state: not_started` |
 | `portfolio_setup` | 1–60 s | Auto-discover portfolio files in `./portfolios/` | `init_state: initializing`, `current_stage: setup` |
 | `portfolio_refresh` | 30–120 s | Pull quotes / analyst / news / FRED yields for each symbol | `init_state: initializing`, `current_stage: refresh` |
@@ -761,13 +761,12 @@ docker compose up -d     # cold restart with auto-init
 
 ## Upgrading
 
-The container is meant to be replaced wholesale on each release. The
-`/data` volume mount preserves user state across replacements, so the
-standard upgrade is "stop, pull, restart with the same volume." For
-cross-host migration or defensive snapshots, use the JSON
-export/import surface.
+The container is meant to be replaced wholesale on each release. There
+are two flows depending on whether the new container reuses the same
+`/data` volume — **same-host** (the common case, zero re-entry) and
+**cross-host** (use the encrypted backup file).
 
-### 1. Check for a new version
+### Check for a new version
 
 ```bash
 curl -s -X POST http://localhost:18090/api/portfolio/version_check | jq
@@ -775,112 +774,191 @@ curl -s -X POST http://localhost:18090/api/portfolio/version_check | jq
 
 ```json
 {
-  "running": "4.1.38",
-  "latest": "4.1.39",
+  "running": "4.1.39",
+  "latest": "4.1.40",
   "upgrade_available": true,
-  "registry": "ghcr.io",
-  "repository": "argonautsystems/ic-engine",
-  "next_steps": [
-    "Run `portfolio_export` to snapshot your current state…",
-    "On the host: `docker compose pull && docker compose up -d`…",
-    "Wait for /healthz init_state=ready (typically 30-60s).",
-    "Run `portfolio_version_check` again to confirm…"
-  ]
+  "next_steps": [...]
 }
 ```
 
-The same call is exposed as MCP tool `portfolio_version_check`. Agents
-should poll this on demand (e.g. once per session) and surface the
-upgrade prompt to the user. Network failures return `latest: null` +
-a warning rather than 5xx — version check is advisory, not load-bearing.
+Same call is exposed as MCP tool `portfolio_version_check`. Network
+failures return `latest: null` + a warning rather than 5xx — version
+check is advisory.
 
-### 2. Snapshot current state (recommended)
+---
+
+### Same-host upgrade (default)
+
+When the new container reuses the same `/data` volume mount, every
+piece of user state — portfolio CSVs, `keys.env`, stonkmode persona,
+section reports — survives automatically. **You don't need to export
+anything.**
 
 ```bash
+# 1. Optional defensive snapshot (portfolios + stonkmode only — see below)
 curl -s -X POST http://localhost:18090/api/portfolio/export > snap.json
-```
 
-The snapshot bundles:
-
-- All CSVs under `/data/portfolios/` (UTF-8 text, base64 if binary).
-- `/data/stonkmode.json` persona state if present.
-- The list of currently-configured key NAMES (no values).
-
-It deliberately does **NOT** carry API key values. Keys are plaintext
-secrets that persist via the `/data` volume mount; for cross-host
-migration where the volume isn't shared, re-set keys via
-`portfolio_keys_set` after import.
-
-### 3. Pull + replace the container
-
-(host-shell — agents tell the user, agents don't execute this)
-
-```bash
-# Standard Docker Compose
+# 2. Pull + replace (host-shell — agents tell the user, don't execute)
 docker compose pull
 docker compose up -d
+# Or for podman + systemd quadlet (NCZ pi-gen layout):
+#   sudo podman pull ghcr.io/argonautsystems/ic-engine:latest
+#   sudo systemctl restart ic-engine.service
 
-# Podman + systemd quadlet (NCZ pi-gen layout)
-sudo podman pull ghcr.io/argonautsystems/ic-engine:latest
-sudo systemctl restart ic-engine.service
-
-# Standalone podman/docker run
-docker pull ghcr.io/argonautsystems/ic-engine:latest
-docker rm -f ic-engine
-docker run -d --name ic-engine \
-  -p 18090:8090 -p 18092:8092 \
-  -v /your/data/dir:/data \
-  --restart unless-stopped \
-  ghcr.io/argonautsystems/ic-engine:latest
-```
-
-### 4. Wait for `init_state=ready`
-
-```bash
+# 3. Wait for init=ready
 until curl -s http://localhost:18090/healthz | jq -e '.init_ready' > /dev/null; do
   sleep 5
 done
 ```
 
-First-run after an image bump may take 30-90 s while the engine
-warms its cache.
+That's the whole flow. Keys persist because `/data/keys.env` is on the
+volume; the new container reads the same file at boot.
 
-### 5. Restore state (only if `/data` was lost)
+---
+
+### Cross-host migration (or volume-was-wiped)
+
+When the new host has a fresh volume, you need to move both the
+**user data** (portfolios + stonkmode) and the **API keys** between
+hosts. They have different security postures and are handled by
+different tools:
+
+- **`portfolio_export` / `portfolio_import`** → user data. Plain JSON;
+  excludes key values by design.
+- **`portfolio_keys_backup` / `portfolio_keys_restore`** → API keys.
+  Passphrase-encrypted (scrypt + AES-256-GCM); the encrypted blob is
+  safe to scp/email/clipboard.
+
+**Recommended at install time.** Right after configuring your API
+keys, create your first encrypted backup:
 
 ```bash
+curl -s -X POST http://localhost:18090/api/portfolio/keys_backup \
+  -H "Content-Type: application/json" \
+  -d '{"passphrase": "your strong passphrase here", "label": "initial"}'
+```
+
+```json
+{
+  "path": "/data/backups/keys-2026-05-07T01-30-00Z-initial.bak",
+  "filename": "keys-2026-05-07T01-30-00Z-initial.bak",
+  "size_bytes": 612,
+  "key_names": ["TOGETHER_API_KEY", "FRED_API_KEY", "MASSIVE_API_KEY"],
+  "kdf": "scrypt-N32768-r8-p1"
+}
+```
+
+Save the file off-host (scp, USB, password manager attachment) and
+**store the passphrase somewhere durable** — without it the backup
+is permanently unrecoverable. That's by design: it's the same posture
+as a password-manager export.
+
+#### Migrating to a new host
+
+On the source host:
+
+```bash
+# 1. Snapshot user data
+curl -s -X POST http://localhost:18090/api/portfolio/export > snap.json
+
+# 2. Encrypt + back up keys (or use an existing backup)
+curl -s -X POST http://localhost:18090/api/portfolio/keys_backup \
+  -d '{"passphrase": "..."}'
+# → {"path": "/data/backups/keys-….bak", ...}
+
+# 3. Copy both files off-host
+scp dest:/tmp/snap.json snap.json
+scp /var/lib/docker/volumes/ic-engine-data/_data/backups/keys-….bak \
+    user@dest:/tmp/
+```
+
+On the destination host (after `docker compose up -d` brings up a
+fresh container):
+
+```bash
+# 1. Restore user data (portfolios + stonkmode)
 curl -s -X POST http://localhost:18090/api/portfolio/import \
   -H "Content-Type: application/json" \
-  -d "{\"snapshot\": $(cat snap.json)}"
+  -d "{\"snapshot\": $(cat /tmp/snap.json)}"
+
+# 2. Place the encrypted backup file under /data/backups/, then restore
+docker cp /tmp/keys-….bak ic-engine:/data/backups/
+curl -s -X POST http://localhost:18090/api/portfolio/keys_restore \
+  -H "Content-Type: application/json" \
+  -d '{"passphrase": "..."}'
+# (no backup_path → auto-picks the most-recent .bak file)
 ```
 
-Then re-set API keys via the dashboard Settings tab, or:
+#### When you don't have shell access on both hosts
+
+Fall back to **prompted key re-entry**. The `portfolio_import`
+response includes `configured_keys_in_snapshot` — the list of key
+names that were set on the source host. The agent walks the user
+through each one:
+
+```text
+Agent: "Your snapshot was set up with these keys: TOGETHER_API_KEY,
+        FRED_API_KEY, MASSIVE_API_KEY. They aren't in the snapshot for
+        security. Paste each one and I'll set it."
+User:  pastes TOGETHER_API_KEY
+Agent: portfolio_keys_set({"keys": {"TOGETHER_API_KEY": "..."}})
+       (and so on)
+```
+
+This is intentionally manual — the user types each secret once, into
+the agent, which round-trips to `keys_set`. Auditable. For larger key
+sets, the encrypted-backup path above is friction-free in comparison.
+
+---
+
+### Listing existing backups
 
 ```bash
-curl -s -X POST http://localhost:18090/api/portfolio/keys_set \
-  -H "Content-Type: application/json" \
-  -d '{"keys": {"TOGETHER_API_KEY": "tk-…", "FRED_API_KEY": "…"}}'
+curl -s -X POST http://localhost:18090/api/portfolio/keys_backups_list | jq
 ```
 
-The import response includes `configured_keys_in_snapshot`, the list
-of key names that were set on the source host — agents use this to
-prompt the user for exactly the right set.
+Returns metadata (filename, size, mtime, KDF) for each `keys-*.bak`
+under `/data/backups/`. **No passphrase required** — listing only
+returns metadata, not contents.
 
-### Agent-driven upgrade flow (single-shot)
+### Threat model & where the passphrase appears
+
+The backup tool is encrypted because the file is meant to LEAVE the
+host (scp, email, USB, cloud sync). Plaintext keys never leave `/data`
+— only the encrypted blob.
+
+**Where the passphrase is exposed**:
+
+- It passes through the tool-call args (so it's in the agent's
+  conversation history once at backup time and once at restore time).
+  For maximum secrecy, invoke from the dashboard browser — keeps the
+  passphrase out of LLM provider context entirely. Or use `curl`
+  directly on the host.
+
+- It is NEVER persisted by the bridge. Each backup/restore call
+  derives the encryption key fresh via scrypt; the passphrase doesn't
+  leave Python's local scope.
+
+**Out of scope**: keylogging on the user's terminal; rubber-hose
+attack; weak-passphrase guessing (we enforce min length 12 to
+discourage trivial passphrases).
+
+### Agent-driven upgrade flow (single-shot script)
 
 ```text
 User:  "Check for upgrades."
-Agent: portfolio_version_check
-       → "v4.1.39 available, you are on v4.1.38"
+Agent: portfolio_version_check → "v4.1.40 available; you're on v4.1.39"
 User:  "Upgrade me."
-Agent: 1. portfolio_export → save the snapshot JSON
-       2. surface the host-shell pull+restart commands to the user
-       3. poll /healthz until init_ready
-       4. portfolio_version_check (running == latest? confirm)
-       5. iff /data was lost: portfolio_import + prompt user for keys
+Agent: 1. portfolio_export → save snap.json
+       2. (if new host) portfolio_keys_backup with user-supplied passphrase
+       3. surface the host-shell pull+restart commands to the user
+       4. poll /healthz until init_ready
+       5. portfolio_version_check (running == latest? confirm)
+       6. iff /data was lost: portfolio_import + portfolio_keys_restore
+          (or prompted re-entry via portfolio_keys_set)
 ```
 
-The agent never executes the host-shell step itself — running shell on
-the host is outside the container's authority. Surface the commands
+The agent never executes host-shell commands itself. Surface them
 clearly and let the user run them.
 
 ---

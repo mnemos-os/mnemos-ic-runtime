@@ -9,6 +9,73 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.1.40] — 2026-05-07
+
+### Added
+
+- **Encrypted keys backup/restore (#96).** Three new MCP tools +
+  matching REST endpoints close the cross-host migration gap left
+  open by v4.1.39's deliberately-key-value-free `portfolio_export`:
+  - `portfolio_keys_backup(passphrase, label?)` — encrypts
+    `/data/keys.env` with the user-supplied passphrase (scrypt-N32768
+    KDF + AES-256-GCM) and writes an armored ASCII blob to
+    `/data/backups/keys-<ts>[-label].bak` (mode 0600). The armored
+    format is base64-wrapped between magic header/footer lines, so
+    the file survives scp/email/clipboard/USB transport. Returns
+    filename + size + key NAMES + KDF — never values.
+  - `portfolio_keys_restore(passphrase, backup_path?)` — decrypts a
+    backup and replaces `/data/keys.env`. Decrypted values NEVER
+    return to the caller; only the list of restored key NAMES.
+    Mirrors keys into `os.environ` so the next portfolio_ask sees
+    them without restart. Auto-picks the most-recent `.bak` if path
+    omitted; rejects path traversal outside `/data/backups/`.
+  - `portfolio_keys_backups_list()` — enumerate backups (filename,
+    size, mtime, KDF). No passphrase required for listing.
+
+  This is the recommended cross-host migration path: encrypted blob
+  travels alongside the `portfolio_export` JSON, both restored on the
+  destination host. Plaintext keys never traverse the agent surface;
+  the passphrase passes through tool-call args once at backup time
+  and once at restore time (use the dashboard browser when secrecy
+  from the LLM provider matters).
+
+### Docs
+
+- `## Upgrading` section in `SKILL.md` rewritten to split the flow
+  into **same-host** (volume-mounted, zero re-entry) and **cross-host**
+  (encrypted backup file). Spells out the install-time recommendation:
+  create your first encrypted backup right after configuring keys.
+  Documents the prompted-key-re-entry fallback for setups where the
+  user lacks shell access on both hosts.
+
+### Dependencies
+
+- `cryptography>=44` added to bridge dependencies (~5 MB image
+  footprint). scrypt + AES-GCM only; nothing else from the library
+  is touched at runtime.
+
+### Tests
+
+- 18 new tests in `tests/test_keys_backup.py`: passphrase floor (min
+  12 chars), missing/empty keys-file rejection, armored format
+  validation, label sanitization (rejects path separators + shell
+  metacharacters), key-NAMES-not-VALUES invariant, plaintext-secret-
+  leak guard against the encrypted blob, full backup→wipe→restore
+  round-trip, wrong-passphrase rejection (AES-GCM auth tag), auto-
+  pick-most-recent, path-traversal rejection, missing-file rejection,
+  corrupt-blob rejection, format-without-magic rejection, env-mirror
+  on restore, list-without-passphrase. 94 passed across all non-
+  container suites.
+
+### Image
+
+- `ghcr.io/argonautsystems/ic-engine:4.1.40-cpu` (multi-arch amd64 +
+  arm64/v8). Manual TYPHON buildx publish; CI on mnemos-os still
+  quota-blocked.
+
+ic-engine ref unchanged from v4.1.38 (`11adc63c`). v4.1.40 is bridge
++ docs only.
+
 ## [4.1.39] — 2026-05-07
 
 ### Added

@@ -28,6 +28,8 @@ dependencies = [
     "pydantic>=2.10",
     # Structured logging
     "structlog>=24.4",
+    # Encrypted keys backup (scrypt KDF + AES-GCM via portfolio_keys_backup)
+    "cryptography>=44",
 ]
 
 [project.scripts]

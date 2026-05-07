@@ -31,6 +31,12 @@ from .keys import (
     portfolio_keys_delete,
     portfolio_keys_recommend,
 )
+from .keys_backup import (
+    KEYS_BACKUP_TOOLS,
+    portfolio_keys_backup,
+    portfolio_keys_restore,
+    portfolio_keys_backups_list,
+)
 from .responses import (
     RESPONSE_TOOLS,
     portfolio_response_get,
@@ -48,7 +54,13 @@ from .upgrade import (
 # Single canonical registry across all domains. Add new domain modules by
 # importing their TOOLS dict and merging here.
 TOOL_REGISTRY: dict[str, dict[str, Any]] = {}
-for _domain in (PORTFOLIO_TOOLS, KEYS_TOOLS, RESPONSE_TOOLS, UPGRADE_TOOLS):
+for _domain in (
+    PORTFOLIO_TOOLS,
+    KEYS_TOOLS,
+    KEYS_BACKUP_TOOLS,
+    RESPONSE_TOOLS,
+    UPGRADE_TOOLS,
+):
     TOOL_REGISTRY.update(_domain)
 
 # Alias for v5 mnemos parity
@@ -84,6 +96,9 @@ __all__ = [
     "portfolio_keys_set",
     "portfolio_keys_delete",
     "portfolio_keys_recommend",
+    "portfolio_keys_backup",
+    "portfolio_keys_restore",
+    "portfolio_keys_backups_list",
     "portfolio_response_get",
     "portfolio_response_list",
     "portfolio_response_delete",
