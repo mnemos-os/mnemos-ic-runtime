@@ -54,7 +54,24 @@ _PROVIDER_KEY_FALLBACKS = (
 
 
 def _resolve_narrative_api_key() -> str | None:
-    """Return the first non-empty narrative API key from the fallback chain."""
+    """Return the first non-empty narrative API key from the fallback chain.
+
+    Reads from ``os.environ`` rather than directly from ``/data/keys.env``.
+    Keys flow into ``os.environ`` via two paths, both already mode-checked
+    or operator-configured at their source:
+
+      1. ``key_resolver.load_keys_env`` reads ``/data/keys.env`` at bridge
+         startup, enforcing 0600 via ``KeysFileTooPermissiveError``.
+         (Live key updates from the dashboard's ``portfolio_keys_set``
+         path additionally call ``mcp/tools/keys._push_into_environ`` to
+         mirror new values into ``os.environ`` without a restart, but
+         that helper is not the startup-load path.)
+      2. ``compose`` / quadlet ``Environment=`` entries — the operator's
+         deliberate choice; not subject to bridge mode enforcement.
+
+    Both paths are intentional. The bridge does not enforce 0600 on env
+    vars set by the runtime spec — that's the operator's responsibility.
+    """
     for var in _PROVIDER_KEY_FALLBACKS:
         v = os.environ.get(var, "").strip()
         if v:

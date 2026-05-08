@@ -9,6 +9,56 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.3.2] — 2026-05-08
+
+### Security
+
+- **Permissive-mode warning on `portfolio_keys_backup`.** When
+  `/data/keys.env` is written at a mode wider than 0600 (e.g. 0644
+  from a manual `cp`), the encrypted-backup path now logs a
+  `keys_backup.permissive_mode` structlog warning AND surfaces a
+  `chmod 600` advisory in the response's `warnings[]` field. Backup
+  proceeds either way — refusing here would leave the operator
+  stranded with an already-too-permissive file — but the warning
+  ensures they know to fix the underlying permissions before the
+  next regenerate / agent action picks up the file.
+
+### Changed (documentation only)
+
+- **`_resolve_narrative_api_key` docstring** now explicitly documents
+  why reading TOGETHER / OPENAI / GEMINI keys from `os.environ`
+  (rather than directly from `/data/keys.env`) is intentional design:
+  values flow into env via either (a) `key_resolver.load_keys_env`
+  at bridge startup (which DOES enforce 0600 via
+  `KeysFileTooPermissiveError`) or (b) `compose` / quadlet
+  `Environment=` entries (operator's deliberate choice; not subject
+  to bridge mode enforcement). Future codex / human readers won't
+  re-flag this as a bypass.
+
+- **`_mnemos_token` docstring** now explicitly documents why the
+  `MNEMOS_TOKEN` / `MNEMOS_BEARER` / `MNEMOS_API_KEY` lookup chain
+  is INTENTIONALLY exempt from `key_resolver`: Mnemos auth is an
+  internal service token configured via cluster bootstrap, not the
+  user-facing keys.env file. The `_API_KEY` suffix on the legacy
+  alias is misleading; the comment explicitly tells future readers
+  not to migrate this through `key_resolver`.
+
+### Notes
+
+- v4.3.2 closes the loop on the 4 round-4 codex findings from
+  v4.3.1's adversarial review by either (a) adding mode-warning
+  surfacing on the one pre-existing path that genuinely benefited
+  from defense-in-depth (`keys_backup`), or (b) documenting why the
+  remaining pre-existing paths are intentional design.
+- Bridge-only release: `IC_ENGINE_REF` unchanged at
+  `11adc63c00e215c36aef9ffaf985555eb2f83bd6`. Engine source identical
+  to v4.1.38–v4.3.1.
+- Codex adversarial review iterated 1 round → APPROVE (one trivial
+  docstring inaccuracy + a test-count reconciliation, both
+  hand-fixed per CLAUDE.md directive 7's typo-grade exception).
+- 186 non-environmental tests passing (was 184 in v4.3.1; +2 new
+  tests covering mode-warning behavior on backup).
+
 ## [4.3.1] — 2026-05-08
 
 ### Added

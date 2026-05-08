@@ -52,6 +52,7 @@ from __future__ import annotations
 import base64
 import os
 import re
+import stat as _stat
 import time
 from pathlib import Path
 from typing import Any
@@ -157,6 +158,28 @@ async def portfolio_keys_backup(passphrase: str, label: str = "") -> dict[str, A
     if not keys_path.exists():
         return {"error": "no_keys_file", "path": str(keys_path)}
 
+    # Defense-in-depth: surface a warning if /data/keys.env is more
+    # permissive than 0600. The backup proceeds (the operator explicitly
+    # asked for it; refusing here would leave them stranded with an
+    # already-too-permissive file), but the warning lands in structlog
+    # AND the result dict so they can chmod 600 the file before the
+    # next regenerate / agent action picks it up.
+    try:
+        mode = _stat.S_IMODE(keys_path.stat().st_mode)
+    except OSError:
+        mode = None
+    mode_warning: str | None = None
+    if mode is not None and (mode & 0o077):
+        mode_warning = (
+            f"/data/keys.env is mode {oct(mode)} — should be 0600 "
+            f"(owner read/write only). Run: chmod 600 {keys_path}"
+        )
+        logger.warning(
+            "keys_backup.permissive_mode",
+            path=str(keys_path),
+            mode=oct(mode),
+        )
+
     plaintext = keys_path.read_bytes()
     if not plaintext.strip():
         return {"error": "keys_file_empty", "path": str(keys_path)}
@@ -198,12 +221,16 @@ async def portfolio_keys_backup(passphrase: str, label: str = "") -> dict[str, A
         key_names=names,
         size_bytes=len(armored),
     )
+    warnings: list[str] = []
+    if mode_warning:
+        warnings.append(mode_warning)
     return {
         "path": str(target),
         "filename": filename,
         "size_bytes": len(armored),
         "key_names": names,
         "kdf": f"scrypt-N{_SCRYPT_N}-r{_SCRYPT_R}-p{_SCRYPT_P}",
+        "warnings": warnings,
         "next_steps": [
             (
                 "Copy this file off-host with `scp` or equivalent. The "

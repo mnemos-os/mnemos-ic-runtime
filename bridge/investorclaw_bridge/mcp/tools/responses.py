@@ -42,6 +42,21 @@ def _mnemos_base() -> str:
 
 
 def _mnemos_token() -> str | None:
+    """Mnemos service auth token.
+
+    NOT a provider API key — reads from ``os.environ`` directly,
+    bypassing the 0600 enforcement that ``key_resolver.load_keys_env``
+    applies to ``/data/keys.env`` reads. The bypass is intentional:
+    Mnemos is an internal service whose auth token is configured via
+    ``compose`` / quadlet ``Environment=`` (cluster bootstrap), not
+    through the user-facing keys.env file.
+
+    Tries ``MNEMOS_TOKEN`` (preferred) → ``MNEMOS_BEARER`` (alias) →
+    ``MNEMOS_API_KEY`` (legacy alias kept for backward-compat with
+    earlier deployments). The ``_API_KEY`` suffix on the legacy alias
+    can mislead readers into thinking this is a provider key path —
+    it is not. Don't migrate this through key_resolver.
+    """
     return (
         os.environ.get("MNEMOS_TOKEN")
         or os.environ.get("MNEMOS_BEARER")

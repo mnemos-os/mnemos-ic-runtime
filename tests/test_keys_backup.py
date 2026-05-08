@@ -84,6 +84,34 @@ async def test_backup_filename_uses_label(keys_setup):
 
 
 @pytest.mark.asyncio
+async def test_backup_warns_on_permissive_mode_but_proceeds(keys_setup):
+    """v4.3.2 — keys.env at mode 0644 still backs up, but the result
+    surfaces a chmod-600 warning so the operator can fix the underlying
+    file. Refusing here would leave them stranded with an
+    already-too-permissive file."""
+    keys_setup["keys"].chmod(0o644)
+    result = await portfolio_keys_backup(passphrase=_GOOD_PASSPHRASE)
+    assert "error" not in result, "permissive mode must NOT block backup"
+    warnings = result.get("warnings") or []
+    assert warnings, "permissive mode must surface a warning"
+    msg = warnings[0].lower()
+    assert "0o644" in warnings[0] or "mode" in msg
+    assert "0600" in warnings[0]
+    # The encrypted blob still made it to disk.
+    path = Path(result["path"])
+    assert path.exists()
+
+
+@pytest.mark.asyncio
+async def test_backup_no_warning_when_mode_is_0600(keys_setup):
+    """The 0600 happy path produces no warnings list entry."""
+    keys_setup["keys"].chmod(0o600)
+    result = await portfolio_keys_backup(passphrase=_GOOD_PASSPHRASE)
+    assert "error" not in result
+    assert result.get("warnings") == []
+
+
+@pytest.mark.asyncio
 async def test_backup_label_sanitized(keys_setup):
     """Label sanitization strips path separators + shell metacharacters."""
     result = await portfolio_keys_backup(
