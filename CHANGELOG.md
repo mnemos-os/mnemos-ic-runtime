@@ -9,6 +9,77 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.4.0] — 2026-05-08
+
+### Added
+
+- **Stale-section auto-detection at bridge startup.** When the bridge
+  starts, after the standard `setup → refresh → seed_ask` initialize
+  completes, it walks `/data/reports/` and checks per-section JSON
+  freshness against `IC_SECTION_STALE_HOURS` (default 24h). If any
+  CORE section is stale (holdings / performance / bonds / analyst /
+  news / whatchanged / scenario / synthesize), the full
+  `_regenerate_sweep` (12-section pipeline previously only triggered
+  by the dashboard regenerate button) fires async in the background.
+
+  This closes a v4.x latent gap surfaced by the TYPHON cobol
+  regression test: `refresh` only updates the analyst section, so
+  every cobol prompt's narrator detected per-section staleness and
+  triggered in-process refresh at ~60s/section, blowing curl
+  timeouts. After v4.4.0 the bridge auto-heals stale state on every
+  startup.
+
+- **New module `bridge/investorclaw_bridge/section_freshness.py`**
+  with `stale_sections(reports_dir, max_age_hours)` and
+  `should_run_full_sweep()` helpers. Section registry mirrors the
+  ic-engine command outputs at v4.x (sync-check on every
+  `IC_ENGINE_REF` bump; auto-discovery deliberately avoided to
+  prevent over-triggering on engine debug-output files).
+
+- **Process-wide regenerate sweep lock.** New `_sweep_lock` +
+  `_sweep_in_progress` flag in `serve.py` guards all four sweep
+  entry points: boot-time auto-init, dashboard `/dashboard/regenerate`,
+  upload-driven regenerate, and MCP `portfolio_refresh`. When the
+  lock is held, duplicate requests log
+  `regenerate_sweep.already_running` and return a no-op status dict
+  per section instead of starting a second concurrent ic-engine
+  subprocess. `is_sweeping()` exposed for status surfacing;
+  `sweep_in_progress` field added to `/healthz` response.
+
+### Security
+
+- **Bridge env-config validation.** `_parse_stale_hours()` now
+  validates `IC_SECTION_STALE_HOURS` against ValueError /
+  TypeError / negative / zero / inf / nan. Each invalid case logs a
+  `bridge.section_freshness.invalid_stale_hours` warning with
+  explicit `reason=parse_failed | negative | zero | non_finite` and
+  caller context, then falls back to 24.0. Previously a malformed
+  env value silently disabled the protective sweep.
+
+- **Section-freshness robustness.** `stale_sections` now treats:
+  zero-byte report files as stale (file present but empty);
+  future-mtime files as stale (clock skew or future-dated file)
+  with `age_hours` clamped to 0; OSError on a core section's
+  `stat()` as stale (was: skipped / treated as fresh). All three
+  edge cases previously suppressed the protective sweep.
+
+### Notes
+
+- v4.4.0 is bridge-only: `IC_ENGINE_REF` unchanged at
+  `11adc63c00e215c36aef9ffaf985555eb2f83bd6`. Engine source is
+  identical to v4.1.38–v4.3.2.
+- Codex adversarial review iterated 3 rounds before APPROVE-with-
+  minor-aesthetics — round 1 surfaced 4 MAJOR (sweep race, env
+  validation gap, freshness robustness, fire-and-forget tracking)
+  + 2 MINOR (drift detection, test coverage); round 2 fixed all
+  six; round 3 caught MCP `portfolio_refresh` lock bypass + a
+  consistency log; both fixed. Remaining round-4 findings were
+  logging-aesthetic (caller-context in warning), hand-fixed.
+- 207 non-environmental tests passing (was 186 in v4.3.2; +21 new
+  tests covering section_freshness + sweep-lock concurrency +
+  IC_SECTION_STALE_HOURS env validation + zero-byte/future-mtime
+  edge cases).
+
 ## [4.3.2] — 2026-05-08
 
 ### Security

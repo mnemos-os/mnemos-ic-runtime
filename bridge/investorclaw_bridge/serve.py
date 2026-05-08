@@ -16,10 +16,116 @@ For the v4.0 beta pilot (24h timeline as of 2026-05-01):
 from __future__ import annotations
 
 import logging
+import math
 import os
 import sys
+import time
+from collections.abc import Awaitable, Callable
+from typing import Any
 
+import asyncio
 import structlog
+
+
+logger = structlog.get_logger("investorclaw_bridge.serve")
+_sweep_lock = asyncio.Lock()
+_sweep_in_progress = False
+
+
+def is_sweeping() -> bool:
+    """Return whether a regenerate/refresh sweep owns the process-wide lock."""
+    return _sweep_in_progress
+
+
+def _parse_stale_hours(raw: str | None = None, caller: str = "auto_initialize") -> float:
+    """Parse IC_SECTION_STALE_HOURS, falling back to the safe 24h default.
+
+    `caller` identifies the call site in log output so operators can
+    distinguish startup-time vs runtime invocations.
+    """
+    raw_value = os.environ.get("IC_SECTION_STALE_HOURS", "24") if raw is None else raw
+    def _warn(reason: str) -> None:
+        logger.warning(
+            "bridge.section_freshness.invalid_stale_hours",
+            raw=raw_value,
+            fallback=24.0,
+            reason=reason,
+            caller=caller,
+        )
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        _warn("parse_failed")
+        return 24.0
+    if value < 0.0:
+        _warn("negative")
+        return 24.0
+    if value == 0.0:
+        _warn("zero")
+        return 24.0
+    if math.isinf(value) or math.isnan(value):
+        _warn("non_finite")
+        return 24.0
+    return value
+
+
+def _sweep_already_running_result() -> dict[str, Any]:
+    sections = [
+        "setup", "refresh", "performance", "bonds", "analyst", "news",
+        "whatchanged", "scenario", "optimize", "rebalance", "cashflow",
+        "peer", "markets", "synthesize",
+    ]
+    status = {"status": "already_running", "skipped": True}
+    return {section: dict(status) for section in sections}
+
+
+async def _run_with_sweep_lock(
+    operation: Callable[[], Awaitable[dict[str, Any]]],
+) -> dict[str, Any]:
+    global _sweep_in_progress
+    if _sweep_lock.locked():
+        logger.info("regenerate_sweep.already_running")
+        return _sweep_already_running_result()
+    await _sweep_lock.acquire()
+    _sweep_in_progress = True
+    try:
+        return await operation()
+    finally:
+        _sweep_in_progress = False
+        _sweep_lock.release()
+
+
+async def _regenerate_sweep(
+    run_ic_engine: Callable[..., Awaitable[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Run the full data-refresh + analyzer sweep that backs every tab.
+
+    Sequenced so a failing section doesn't abort the rest. Engine sections
+    that don't write JSON (or aren't installed) just no-op.
+    """
+    if run_ic_engine is None:
+        from .mcp._runtime import _run_ic_engine as run_ic_engine
+
+    async def _run() -> dict[str, Any]:
+        results: dict[str, Any] = {}
+        # Setup is fast and idempotent — re-discovers any newly uploaded files.
+        results["setup"] = await run_ic_engine(["setup"], timeout_sec=300.0)
+        # The big refresh — pulls fresh prices for every position.
+        results["refresh"] = await run_ic_engine(["refresh"], timeout_sec=1800.0)
+        # Per-section analyzers. Each writes its own JSON under /data/reports/.
+        sections = [
+            "performance", "bonds", "analyst", "news", "whatchanged",
+            "scenario", "optimize", "rebalance", "cashflow", "peer",
+            "markets", "synthesize",
+        ]
+        for sec in sections:
+            try:
+                results[sec] = await run_ic_engine([sec], timeout_sec=900.0)
+            except Exception as e:  # noqa: BLE001
+                results[sec] = {"error": f"{type(e).__name__}: {e}"}
+        return results
+
+    return await _run_with_sweep_lock(_run)
 
 
 def _configure_logging() -> None:
@@ -145,6 +251,7 @@ def main() -> int:
         h["init_ready"] = snap["ready"]
         h["init_current_stage"] = snap["current_stage"]
         h["init_elapsed_ms"] = snap["elapsed_ms"]
+        h["sweep_in_progress"] = is_sweeping()
         return JSONResponse(h)
 
     @dashboard_app.get("/api/version")
@@ -201,35 +308,12 @@ def main() -> int:
     _provider_routing.hydrate_environ_from_file()
     from . import provider_diagnostics as _provider_diagnostics
 
-    async def _regenerate_sweep() -> dict:
-        """Run the full data-refresh + analyzer sweep that backs every tab.
-        Sequenced so a failing section doesn't abort the rest. Engine sections
-        that don't write JSON (or aren't installed) just no-op.
-        """
-        results: dict = {}
-        # Setup is fast and idempotent — re-discovers any newly uploaded files.
-        results["setup"] = await _run_ic_engine(["setup"], timeout_sec=300.0)
-        # The big refresh — pulls fresh prices for every position.
-        results["refresh"] = await _run_ic_engine(["refresh"], timeout_sec=1800.0)
-        # Per-section analyzers. Each writes its own JSON under /data/reports/.
-        sections = [
-            "performance", "bonds", "analyst", "news", "whatchanged",
-            "scenario", "optimize", "rebalance", "cashflow", "peer",
-            "markets", "synthesize",
-        ]
-        for sec in sections:
-            try:
-                results[sec] = await _run_ic_engine([sec], timeout_sec=900.0)
-            except Exception as e:  # noqa: BLE001
-                results[sec] = {"error": f"{type(e).__name__}: {e}"}
-        return results
-
     dashboard.attach_to(
         dashboard_app,
         get_init_state=_get_init_state,
         get_keys_status=portfolio_keys_status,
         set_key=lambda name, value: portfolio_keys_set({name: value}),
-        regenerate=_regenerate_sweep,
+        regenerate=lambda: _regenerate_sweep(_run_ic_engine),
         get_keys_recommend=portfolio_keys_recommend,
         delete_key=portfolio_keys_delete,
         backup_keys=portfolio_keys_backup,
@@ -327,6 +411,7 @@ def main() -> int:
         h["init_ready"] = snap["ready"]
         h["init_current_stage"] = snap["current_stage"]
         h["init_elapsed_ms"] = snap["elapsed_ms"]
+        h["sweep_in_progress"] = is_sweeping()
         return JSONResponse(h)
 
     # Register REST wrappers BEFORE the FastMCP mount; FastAPI route
@@ -390,6 +475,56 @@ def main() -> int:
             )
         except Exception as e:
             logger.warning("bridge.auto_initialize.failed", error=f"{type(e).__name__}: {e}")
+            return
+
+        # v4.4.0 — detect stale per-section JSONs and run the full
+        # regenerate sweep in background. Without this, every cobol
+        # prompt's narrator detects per-section staleness on first call
+        # and triggers in-process refreshes — at ~60s × N sections,
+        # any non-cached prompt blows the curl timeout. Sweep runs
+        # async so bridge stays "ready" for incoming calls; sections
+        # that complete during the sweep become available to subsequent
+        # asks immediately.
+        try:
+            from . import section_freshness
+            should_sweep, report = section_freshness.should_run_full_sweep(
+                max_age_hours=_parse_stale_hours()
+            )
+            logger.info(
+                "bridge.section_freshness.checked",
+                stale_count=report.get("stale_count"),
+                stale_names=report.get("stale_names"),
+                any_core_stale=report.get("any_core_stale"),
+            )
+            if should_sweep:
+                logger.info(
+                    "bridge.regenerate_sweep.scheduled",
+                    reason="core_sections_stale",
+                    stale_names=report.get("stale_names"),
+                )
+
+                async def _bg_sweep():
+                    try:
+                        sweep_t0 = time.monotonic()
+                        sweep_result = await _regenerate_sweep(_run_ic_engine)
+                        sweep_dur_ms = int((time.monotonic() - sweep_t0) * 1000)
+                        logger.info(
+                            "bridge.regenerate_sweep.done",
+                            duration_ms=sweep_dur_ms,
+                            sections_run=sorted(sweep_result.keys()),
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(
+                            "bridge.regenerate_sweep.failed",
+                            error=f"{type(exc).__name__}: {exc}",
+                        )
+
+                asyncio.create_task(_bg_sweep())
+        except Exception as e:
+            logger.warning(
+                "bridge.section_freshness.check_failed",
+                error=f"{type(e).__name__}: {e}",
+            )
 
     async def _run_both() -> None:
         tasks = [mcp_uvicorn.serve(), dash_uvicorn.serve()]

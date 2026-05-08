@@ -80,7 +80,11 @@ async def portfolio_refresh() -> dict[str, Any]:
     Large portfolios (200+ positions) need ~3-5min on a cold yfinance cache,
     so timeout matches the broader subprocess default (600s).
     """
-    return await _run_ic_engine(["refresh"], timeout_sec=1800.0)
+    from ...serve import _run_with_sweep_lock
+
+    return await _run_with_sweep_lock(
+        lambda: _run_ic_engine(["refresh"], timeout_sec=1800.0)
+    )
 
 
 async def portfolio_setup() -> dict[str, Any]:
@@ -110,6 +114,7 @@ _INIT_STATE: dict[str, Any] = {
     "elapsed_ms": 0,
     "last_error": None,              # str | None
     "ready": False,                  # convenience: state == "ready"
+    "sweep_in_progress": False,
 }
 
 
@@ -117,6 +122,11 @@ def get_init_state() -> dict[str, Any]:
     """Snapshot the current init state. Updated live by portfolio_initialize."""
     snapshot = dict(_INIT_STATE)
     snapshot["ready"] = _INIT_STATE["state"] == "ready"
+    try:
+        from ...serve import is_sweeping
+        snapshot["sweep_in_progress"] = is_sweeping()
+    except Exception:
+        snapshot["sweep_in_progress"] = False
     if _INIT_STATE["started_at"]:
         end = _INIT_STATE["completed_at"] or _time.time()
         snapshot["elapsed_ms"] = int((end - _INIT_STATE["started_at"]) * 1000)
