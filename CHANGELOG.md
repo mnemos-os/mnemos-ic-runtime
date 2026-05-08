@@ -9,6 +9,41 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.2.1] — 2026-05-08
+
+### Added
+
+- **Mobile-responsive dashboard.** Two new `@media` breakpoints in
+  `_shell()` — tablet (≤768px) and phone (≤480px). Changes:
+  - Header / main / footer padding collapses from 32px to 16-12px
+  - KPI grid stacks 2-col at tablet, 1-col at phone
+  - Form inputs (`text` / `password` / `select` / `file`) grow to
+    full container width
+  - Primary submit buttons inside section cards grow to a 360px
+    cap so the tap target is comfortable; compact per-row buttons
+    (delete-key, load-template, inline-regen) keep natural width
+  - Tables inside `.section-card` get horizontal scroll on
+    overflow
+  - Phone breakpoint hides the header date/version meta line
+    (still readable on the About tab and `/api/version`)
+  - Tab nav already had `overflow-x: auto` from v4.x; mobile
+    breakpoint tightens its padding
+  - New `form select` style for the v4.2.0 provider-routing
+    dropdown so it visually matches the existing text/password
+    inputs on every viewport
+
+  CSS-only — no Python or behavior changes.
+
+### Notes
+
+- v4.2.1 is bridge-only; same image semantics as v4.2.0.
+- Codex adversarial review caught a CSS scoping bug
+  (`form button { width: 100% }` was too broad and would have
+  hit compact table-action buttons); fix narrows to
+  `.section-card > form > button[type="submit"]`.
+- 137 non-environmental tests passing (unchanged from v4.2.0;
+  no new tests for pure CSS).
+
 ## [4.2.0] — 2026-05-08
 
 ### Added

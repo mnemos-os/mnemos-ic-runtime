@@ -287,7 +287,7 @@ ENV IC_DASHBOARD_BIND=0.0.0.0:8092
 # so the bridge can self-report its image version (the OCI label below
 # isn't readable from inside the container without docker socket access).
 # Bump this AND the LABEL line at the bottom of the file together.
-ENV IC_ENGINE_VERSION=4.2.0
+ENV IC_ENGINE_VERSION=4.2.1
 
 # ic-engine reads its own canonical env-var names (INVESTOR_CLAW_*).
 # Set them to the same values so subprocess'd analyzers honor /data/.
@@ -351,4 +351,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.2.0"
+LABEL org.opencontainers.image.version="4.2.1"

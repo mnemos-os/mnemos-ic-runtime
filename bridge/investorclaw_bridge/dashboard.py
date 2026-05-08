@@ -214,6 +214,10 @@ form input[type="text"], form input[type="password"] {{
   background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
   padding: 8px 12px; color: #c9d1d9; width: 360px; font-size: 13px;
 }}
+form select {{
+  background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+  padding: 8px 12px; color: #c9d1d9; width: 360px; font-size: 13px;
+}}
 form input[type="file"] {{
   background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
   padding: 6px; color: #c9d1d9; font-size: 13px;
@@ -230,6 +234,49 @@ form button {{
 }}
 form button:hover {{ background: #2ea043; }}
 .footer {{ margin-top: 48px; color: #8b949e; font-size: 12px; padding: 16px 0; border-top: 1px solid #21262d; }}
+
+/* Tablet + mobile (≤768px) — collapse padding, allow wide tables to scroll
+   horizontally inside their card, make form inputs full-width, stack KPI
+   grid more aggressively. */
+@media (max-width: 768px) {{
+  header {{ padding: 12px 16px; }}
+  header h1 {{ font-size: 16px; }}
+  header .meta {{ font-size: 11px; }}
+  nav {{ padding: 0 8px; }}
+  .tab {{ padding: 10px 12px; font-size: 13px; }}
+  .tab-icon {{ margin-right: 4px; }}
+  main {{ padding: 16px; max-width: 100%; }}
+  h2 {{ font-size: 16px; }}
+  .footer {{ padding-left: 16px !important; padding-right: 16px !important; }}
+  .kpi-grid {{ grid-template-columns: 1fr 1fr; gap: 8px; }}
+  .kpi {{ padding: 10px; }}
+  .kpi-value {{ font-size: 16px; }}
+  .section-card {{ padding: 12px; overflow-x: auto; }}
+  form input[type="text"],
+  form input[type="password"] {{ width: 100%; max-width: 100%; }}
+  form input[type="file"] {{ width: 100%; }}
+  form select {{ width: 100%; }}
+  /* Multi-input forms inside section-cards (the primary settings forms
+     — save key, backup, restore, upload, routing, lookup) get a
+     full-width submit button on mobile for a comfortable tap target.
+     Compact per-row buttons (delete-key in keys table, load-template
+     in template cards, regenerate inline form) are NOT direct children
+     of a section-card and keep their natural width. */
+  .section-card > form > button[type="submit"] {{ width: 100%; max-width: 360px; }}
+  form.inline {{ display: block; margin-top: 8px; }}
+  form.inline button.regen {{ margin-left: 0; margin-top: 8px; }}
+  table {{ font-size: 12px; }}
+  th, td {{ padding: 6px 8px; }}
+}}
+
+/* Phone-narrow (≤480px) — single-column KPI grid, tighter typography. */
+@media (max-width: 480px) {{
+  .kpi-grid {{ grid-template-columns: 1fr; }}
+  header h1 {{ font-size: 15px; }}
+  header .meta {{ display: none; }}
+  .tab {{ padding: 10px 10px; }}
+  main {{ padding: 12px; }}
+}}
 </style>
 </head>
 <body>
