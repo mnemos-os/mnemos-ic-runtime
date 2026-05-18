@@ -79,7 +79,8 @@ RUN UV_PROJECT_ENVIRONMENT=/build/.venv uv pip install \
 # pip-compatible CLI) for both list and uninstall. The earlier attempt
 # using `python -m pip` failed silently inside xargs because pip isn't
 # in the venv.
-RUN set -ex; \
+# hadolint ignore=SC2086,DL4006
+RUN set -exo pipefail; \
     PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
        | /usr/local/bin/python3 -c "import json, sys; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower().startswith('nvidia') or p['name'].lower() in ('triton','torch')))"); \
     echo "uninstalling: $PKGS"; \
@@ -153,7 +154,8 @@ RUN set -ex; \
 # Until the upstream clio swap lands we strip the stack at the runtime
 # layer. Unknown-broker schema mapping fails loudly on use — that's the
 # documented runtime limitation.
-RUN set -ex; \
+# hadolint ignore=SC2086,DL4006
+RUN set -exo pipefail; \
     PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
        | /usr/local/bin/python3 -c "import json, sys; ml={'torch','torchvision','torchaudio','functorch','torchgen','transformers','sentence-transformers','safetensors','tokenizers','huggingface-hub','accelerate','sympy','opencv-python','opencv-python-headless','onnxruntime-gpu'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in ml))"); \
     echo "stripping ML stack: $PKGS"; \
@@ -190,7 +192,8 @@ RUN set -ex; \
 #                          in the engine source — narrator wraps it in a
 #                          bare try/except and the bug is silent. See
 #                          MNEMOS feedback_v4_0_30_30_was_false_positive.md.
-RUN set -ex; \
+# hadolint ignore=SC2086,DL4006
+RUN set -exo pipefail; \
     /usr/local/bin/python3 /build/bridge/patches/lazy_matplotlib_optimize.py \
         /build/.venv/lib/python3.12/site-packages; \
     PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
@@ -223,7 +226,8 @@ RUN set -ex; \
 # Falling back to asyncio's default loop works but is a measurable perf
 # hit on event-loop-heavy workloads. Revisit if/when we move FastMCP to
 # a different transport.
-RUN set -ex; \
+# hadolint ignore=SC2086,DL4006
+RUN set -exo pipefail; \
     PKGS=$(UV_PROJECT_ENVIRONMENT=/build/.venv uv pip list --python /build/.venv/bin/python --format=json \
        | /usr/local/bin/python3 -c "import json, sys; dead={'sqlalchemy','networkx'}; print(' '.join(p['name'] for p in json.load(sys.stdin) if p['name'].lower() in dead))"); \
     echo "stripping orphan deps: $PKGS"; \
@@ -242,6 +246,7 @@ RUN set -ex; \
 FROM python:3.12-slim AS runtime
 
 # Runtime dependencies (libgomp for numpy/scipy on Debian slim, etc.)
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl libgomp1 \
     && rm -rf /var/lib/apt/lists/*
@@ -250,7 +255,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ARG USER_UID=1000
 ARG USER_GID=1000
 RUN groupadd -g ${USER_GID} ic && \
-    useradd -u ${USER_UID} -g ${USER_GID} -m -s /bin/bash ic
+    useradd -l -u ${USER_UID} -g ${USER_GID} -m -s /bin/bash ic
 
 # Copy venv + bridge + ic-engine + dashboard from builder
 COPY --from=builder --chown=ic:ic /build/.venv /opt/ic-engine/.venv
@@ -349,6 +354,6 @@ ENTRYPOINT ["/opt/ic-engine/.venv/bin/python", "-m", "investorclaw_bridge.serve"
 LABEL org.opencontainers.image.title="InvestorClaw ic-engine"
 LABEL org.opencontainers.image.description="Portfolio analysis service exposing MCP-HTTP at :8090 and a dashboard at :8092. Pairs with mnemos-os/mnemos-rs over compose."
 LABEL org.opencontainers.image.licenses="Apache-2.0"
-LABEL org.opencontainers.image.source="https://github.com/mnemos-os/mnemos-ic-runtime"
+LABEL org.opencontainers.image.source="https://github.com/ncz-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
 LABEL org.opencontainers.image.version="4.4.0"
