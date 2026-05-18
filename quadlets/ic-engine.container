@@ -38,7 +38,7 @@ Wants=network-online.target
 # AutoUpdate=registry intentionally OMITTED — same posture as the
 # zeroclaw/openclaw/hermes quadlets per the 3-agent-rootfs handoff.
 # Operators upgrade by deploying a new ncz revision, not by registry pull.
-Image=ghcr.io/argonautsystems/ic-engine:4.4.0-cpu@sha256:f7fdb0e064ec7b6aa8f40bf7944c849d52eeb5201b400e1a11209e85cdb2be1f
+Image=ghcr.io/argonautsystems/ic-engine:4.4.1-cpu@sha256:4d9d58d131891874b58371df4384884cfadb4ac49b0900b30a9fe6ec12346a74
 ContainerName=ic-engine
 
 # Networking
