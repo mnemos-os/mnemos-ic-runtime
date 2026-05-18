@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# CI for mnemos-os/mnemos-ic-runtime
+# CI for ncz-os/mnemos-ic-runtime
 #
 # Triggers on tag push (vMAJOR.MINOR.PATCH). Builds amd64 + arm64 in parallel
 # using docker buildx with QEMU emulation, pushes per-arch tags to ghcr.io,
@@ -12,7 +12,7 @@
 # Requires CI/CD variables:
 #   GHCR_USER     — github username (e.g. perlowja)
 #   GHCR_PAT      — github PAT with `write:packages` scope (masked + protected)
-# Set under Settings → CI/CD → Variables on gitlab.com/mnemos-os/mnemos-ic-runtime
+# Set under Settings → CI/CD → Variables on gitlab.com/ncz-os/mnemos-ic-runtime
 
 stages:
   - lint
@@ -32,7 +32,7 @@ variables:
 # the heavy build kicks in.
 lint:dockerfile:
   stage: lint
-  tags: [argos, mnemos-os]
+  tags: [argos, ncz-os]
   image: hadolint/hadolint:latest-alpine
   script:
     - hadolint Dockerfile
@@ -43,7 +43,7 @@ lint:dockerfile:
 
 lint:compose:
   stage: lint
-  tags: [argos, mnemos-os]
+  tags: [argos, ncz-os]
   image: docker:27.3.1-cli
   script:
     - docker compose -f compose.yml config --quiet
@@ -57,7 +57,7 @@ lint:compose:
 
 .build-template: &build-template
   stage: build
-  tags: [argos, mnemos-os]
+  tags: [argos, ncz-os]
   image: docker:27.3.1-cli
   services:
     - docker:27.3.1-dind
@@ -127,7 +127,7 @@ build:arm64:
 
 manifest:multi-arch:
   stage: manifest
-  tags: [argos, mnemos-os]
+  tags: [argos, ncz-os]
   image: docker:27.3.1-cli
   services:
     - docker:27.3.1-dind
@@ -194,7 +194,7 @@ manifest:multi-arch:
 
 publish:release-summary:
   stage: publish-record
-  tags: [argos, mnemos-os]
+  tags: [argos, ncz-os]
   image: alpine:3.20
   needs:
     - manifest:multi-arch
