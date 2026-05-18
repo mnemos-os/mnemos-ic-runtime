@@ -32,6 +32,7 @@ variables:
 # the heavy build kicks in.
 lint:dockerfile:
   stage: lint
+  tags: [argos, mnemos-os]
   image: hadolint/hadolint:latest-alpine
   script:
     - hadolint Dockerfile
@@ -42,6 +43,7 @@ lint:dockerfile:
 
 lint:compose:
   stage: lint
+  tags: [argos, mnemos-os]
   image: docker:27.3.1-cli
   script:
     - docker compose -f compose.yml config --quiet
@@ -55,6 +57,7 @@ lint:compose:
 
 .build-template: &build-template
   stage: build
+  tags: [argos, mnemos-os]
   image: docker:27.3.1-cli
   services:
     - docker:27.3.1-dind
@@ -124,6 +127,7 @@ build:arm64:
 
 manifest:multi-arch:
   stage: manifest
+  tags: [argos, mnemos-os]
   image: docker:27.3.1-cli
   services:
     - docker:27.3.1-dind
@@ -190,6 +194,7 @@ manifest:multi-arch:
 
 publish:release-summary:
   stage: publish-record
+  tags: [argos, mnemos-os]
   image: alpine:3.20
   needs:
     - manifest:multi-arch
