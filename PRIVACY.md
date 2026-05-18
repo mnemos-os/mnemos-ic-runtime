@@ -94,7 +94,7 @@ request traffic flows to those providers:
 | NewsAPI | News headlines correlated to holdings | https://newsapi.org/privacy |
 | Alpha Vantage | Supplemental price data | https://www.alphavantage.co/privacy/ |
 | MarketAux | Financial news with broader filters | https://www.marketaux.com/privacy |
-| Polygon (via Massive) | Quotes + history for 200+ symbol portfolios | https://polygon.io/privacy |
+| Massive | Quotes + history for 200+ symbol portfolios, Benzinga news, analyst ratings | https://massive.com/privacy |
 | FRED (St. Louis Fed) | Treasury yield curve | https://www.stlouisfed.org/privacy-notice-and-policy |
 
 If the user does not configure these keys, none of these providers

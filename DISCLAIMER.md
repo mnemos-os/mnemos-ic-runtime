@@ -34,7 +34,7 @@ paths, depending on what the user has configured:
   provider).
 - **Market-data providers** — Quotes, news, analyst ratings, FRED yield
   curve, etc. flow to NewsAPI, Finnhub, Alpha Vantage, FRED, MarketAux,
-  and Polygon (via Massive) **only when the user supplies the
+  and Massive **only when the user supplies the
   corresponding API keys**. Without keys, InvestorClaw falls back to
   free `yfinance` queries (no auth, no key, but rate-limited).
 - **Portfolio CSV / XLS / PDF data** stays local in the bind-mounted

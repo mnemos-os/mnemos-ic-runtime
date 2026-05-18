@@ -515,7 +515,7 @@ shell or container restart:
 | `FRED_API_KEY` | FRED (Treasury yields + macro indicators) |
 | `NEWSAPI_KEY` | NewsAPI (per-symbol + market news) |
 | `ALPHA_VANTAGE_KEY` | Alpha Vantage (quote fallback) |
-| `MASSIVE_API_KEY` | Polygon via Massive (high-scale, 200+ symbols) |
+| `MASSIVE_API_KEY` | Massive (high-scale, 200+ symbols; Benzinga news + analyst ratings) |
 | `MARKETAUX_API_KEY` | MarketAux (alternative news source) |
 
 Keys can also be set via the `portfolio_keys_set` MCP tool from your

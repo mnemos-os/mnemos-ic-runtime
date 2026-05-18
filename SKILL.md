@@ -248,7 +248,7 @@ needs through structured responses:
 |---|---|---|---|
 | **≤ 50 symbols** | `TOGETHER_API_KEY` (narrative) | — | yfinance handles quotes/history at this scale; one key covers narrative |
 | **50–200 symbols** | `TOGETHER_API_KEY` | `FINNHUB_KEY` (free 60/min) + `NEWSAPI_KEY` (free 100/day) | Real-time quotes + analyst + per-symbol news without yfinance throttle |
-| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Polygon, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous query1 endpoint rate-limits globally on 200+ symbols under barrage; Polygon is required, the rest fill analyst + news + yields |
+| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Massive, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous query1 endpoint rate-limits globally on 200+ symbols under barrage; Massive is required, the rest fill analyst + news + yields |
 
 Why `TOGETHER_API_KEY` is the only hard requirement for narrative:
 
@@ -263,7 +263,7 @@ Sign-up links (all have free tiers):
 |---|---|---|
 | Together AI | https://api.together.ai/settings/api-keys | $1 free credits |
 | Finnhub | https://finnhub.io/register | 60 calls/min |
-| Polygon (Massive) | https://polygon.io/dashboard/api-keys | paid only |
+| Massive | https://massive.com/ | paid only |
 | MarketAux | https://www.marketaux.com/account/dashboard | 100 calls/day |
 | NewsAPI | https://newsapi.org/register | 100 calls/day |
 | FRED | https://fred.stlouisfed.org/docs/api/api_key.html | unlimited (registration only) |
@@ -489,16 +489,16 @@ choice depends on portfolio size.
 - `FINNHUB_KEY`: real-time quotes + analyst ratings (60/min, free)
 - `NEWSAPI_KEY` *(optional)*: per-symbol news (100/day free)
 
-**Large (200+ symbols)** — Polygon (Massive) is required:
+**Large (200+ symbols)** — Massive is required:
 - `TOGETHER_API_KEY`: LLM narrative
-- `MASSIVE_API_KEY` (Polygon): paid, un-rate-limited quotes + history
+- `MASSIVE_API_KEY` (Massive): paid, un-rate-limited quotes + history + Benzinga news + analyst ratings
 - `FINNHUB_KEY`: analyst ratings + general/forex/crypto/merger news
 - `MARKETAUX_API_KEY` *(optional)*: broader news with category filters
 - `FRED_API_KEY` *(optional)*: Treasury yield curve (Treasury.gov fallback runs without)
 - `ALPHA_VANTAGE_KEY` *(optional)*: supplemental EOD prices (25/day free)
 
 Why: Yahoo's anonymous query1 endpoint rate-limits globally (HTTP 429) on
-200+ symbol portfolios under barrage load. Polygon (`massive`) handles the
+200+ symbol portfolios under barrage load. Massive handles the
 bulk of quotes/history without throttling; Finnhub fills analyst + news;
 the no-key Frankfurter (FX) and Treasury Fiscal Data (yields) providers
 cover the remainder.
@@ -508,7 +508,7 @@ cover the remainder.
 | Key | Purpose | Cost note |
 |---|---|---|
 | `TOGETHER_API_KEY` | LLM narrative synthesis (Together google/gemma-4-31B-it) | serverless, fleet default |
-| `MASSIVE_API_KEY` | Polygon quotes + history (200+ symbol portfolios) | paid, un-rate-limited |
+| `MASSIVE_API_KEY` | Massive: quotes + history (200+ symbol portfolios) + Benzinga news + analyst ratings | paid, un-rate-limited |
 | `FINNHUB_KEY` | Real-time quotes + analyst ratings + category news | 60/min free |
 | `MARKETAUX_API_KEY` | Financial news with broader filters than NewsAPI | 100/day free |
 | `NEWSAPI_KEY` | Per-symbol news (US sources only) | 100/day free |
@@ -747,7 +747,7 @@ Check init progress: `curl http://127.0.0.1:18090/api/portfolio/initialize/statu
 - Bridge subprocess timeout is 1800 s on `portfolio_ask` and `portfolio_refresh`.
 - Engine P1 parallel-stage timeout is 600 s.
 - If you hit either, the engine ran out of upstream API budget (yfinance
-  429, Finnhub rate limit, etc.). Switch to Polygon (`MASSIVE_API_KEY`)
+  429, Finnhub rate limit, etc.). Switch to Massive (`MASSIVE_API_KEY`)
   for large portfolios; see "Which keys to obtain (by portfolio size)".
 
 ### Reset cache + state

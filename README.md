@@ -240,7 +240,7 @@ shell or container restart required):
 | `FRED_API_KEY` | FRED | Treasury yields + economic indicators |
 | `NEWSAPI_KEY` | NewsAPI | Per-symbol + market-wide news |
 | `ALPHA_VANTAGE_KEY` | Alpha Vantage | Quote fallback |
-| `MASSIVE_API_KEY` | Polygon (via Massive) | High-scale quote coverage (200+ symbols) |
+| `MASSIVE_API_KEY` | Massive | High-scale quote coverage (200+ symbols) + Benzinga news + analyst ratings |
 | `MARKETAUX_API_KEY` | MarketAux | Alternative news source |
 
 Keys can also be set via the `portfolio_keys_set` MCP tool from your
@@ -305,17 +305,17 @@ Anthropic's ToS). Fleet defaults:
 |---|---|---|---|
 | **≤ 50 symbols** | `TOGETHER_API_KEY` (narrative) | — | yfinance handles quotes/history at this scale |
 | **50–200 symbols** | `TOGETHER_API_KEY` | `FINNHUB_KEY` (free 60/min) + `NEWSAPI_KEY` (free 100/day) | Real-time quotes + analyst + per-symbol news without yfinance throttle |
-| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Polygon, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous endpoint rate-limits globally on 200+ symbols; Polygon is required, the rest fill analyst + news + yields |
+| **200+ symbols** | `TOGETHER_API_KEY` + `MASSIVE_API_KEY` (Massive, paid) | `FINNHUB_KEY` + `MARKETAUX_API_KEY` (free 100/day) + `FRED_API_KEY` (free, registration) + `ALPHA_VANTAGE_KEY` (free 25/day) | Yahoo's anonymous endpoint rate-limits globally on 200+ symbols; Massive is required, the rest fill analyst + news + yields |
 
 `TOGETHER_API_KEY` is the only key that meaningfully changes output
 quality. Everything else is for scale or richness on larger portfolios.
 The deterministic engine works key-less in degraded mode (yfinance-only)
 but the narrator returns stub catalog summaries instead of real prose.
 
-Sign-up links (free tiers exist for everything except Polygon):
+Sign-up links (free tiers exist for everything except Massive):
 [Together AI](https://api.together.ai/settings/api-keys) ·
 [Finnhub](https://finnhub.io/register) ·
-[Polygon](https://polygon.io/dashboard/api-keys) ·
+[Massive](https://massive.com/) ·
 [MarketAux](https://www.marketaux.com/account/dashboard) ·
 [NewsAPI](https://newsapi.org/register) ·
 [FRED](https://fred.stlouisfed.org/docs/api/api_key.html) ·

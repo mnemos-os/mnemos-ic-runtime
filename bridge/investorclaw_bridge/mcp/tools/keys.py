@@ -23,7 +23,9 @@ catalogue in setup_api.py and rebuilding the image.
 """
 from __future__ import annotations
 
+import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +94,156 @@ def _push_into_environ(updates: dict[str, str]) -> None:
             os.environ.pop(name, None)
 
 
+def _routing_automanaged_path(routing: dict[str, Any] | None = None) -> Path:
+    override = os.environ.get("IC_ROUTING_AUTOMANAGED_FILE")
+    if override:
+        return Path(override)
+    routing_file = None
+    if routing is not None:
+        routing_file = routing.get("routing_file")
+    return Path(
+        routing_file
+        or os.environ.get("IC_PROVIDER_ROUTING_FILE", "/data/provider_routing.env")
+    ).with_name("routing_automanaged.json")
+
+
+def _read_auto_pinned_providers(path: Path) -> set[str]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    providers = raw.get("auto_pinned_providers") if isinstance(raw, dict) else None
+    if not isinstance(providers, list):
+        return set()
+    return {
+        str(provider).strip().lower()
+        for provider in providers
+        if str(provider).strip()
+    }
+
+
+def _write_auto_pinned_providers(path: Path, providers: set[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not providers:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+        return
+
+    tmp_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            dir=path.parent,
+            delete=False,
+            suffix=".tmp",
+            encoding="utf-8",
+        ) as tmp:
+            tmp_name = tmp.name
+            json.dump({"auto_pinned_providers": sorted(providers)}, tmp, sort_keys=True)
+            tmp.write("\n")
+        os.replace(tmp_name, path)
+    except Exception:
+        if tmp_name is not None:
+            try:
+                Path(tmp_name).unlink()
+            except OSError:
+                pass
+        raise
+
+
+def _mark_auto_pinned_provider(path: Path, provider: str) -> None:
+    providers = _read_auto_pinned_providers(path)
+    providers.add(provider)
+    _write_auto_pinned_providers(path, providers)
+
+
+def _clear_auto_pinned_provider(path: Path, provider: str) -> None:
+    providers = _read_auto_pinned_providers(path)
+    providers.discard(provider)
+    _write_auto_pinned_providers(path, providers)
+
+
+def _routing_write_failed(action: str, error: Any) -> dict[str, Any]:
+    if isinstance(error, dict):
+        detail = error.get("detail") or error.get("error") or repr(error)
+    else:
+        detail = str(error)
+    logger.warning(
+        "mcp.keys.routing_write_failed",
+        action=action,
+        error_detail=detail,
+    )
+    return {
+        "status": "routing_write_failed",
+        "changed": False,
+        "error_detail": detail,
+    }
+
+
+def _maybe_auto_route_massive(updates: dict[str, str]) -> dict[str, Any] | None:
+    """Auto-pin price-provider primary to ``massive`` when MASSIVE_API_KEY
+    is supplied, and auto-revert to ``auto`` when MASSIVE_API_KEY is
+    deleted. Never clobbers an explicit non-default user override.
+
+    Returns a small status dict describing the routing change (or None
+    when no change happened) so the caller can surface it in the
+    response payload.
+    """
+    if "MASSIVE_API_KEY" not in updates:
+        return None
+    try:
+        from ...provider_routing import load_routing, save_routing
+    except Exception as exc:  # pragma: no cover — defensive only
+        logger.warning("mcp.keys.routing_import_failed", error=str(exc))
+        return None
+
+    new_value = (updates.get("MASSIVE_API_KEY") or "").strip()
+    current = load_routing()
+    current_primary = (current.get("primary") or "auto").lower()
+    automanaged_path = _routing_automanaged_path(current)
+
+    if new_value:
+        if current_primary in ("", "auto"):
+            try:
+                result = save_routing(primary="massive")
+            except Exception as exc:
+                return _routing_write_failed("auto_set_massive", exc)
+            if isinstance(result, dict) and result.get("saved"):
+                try:
+                    _mark_auto_pinned_provider(automanaged_path, "massive")
+                except OSError as exc:
+                    logger.warning(
+                        "mcp.keys.routing_marker_write_failed",
+                        path=str(automanaged_path),
+                        error=str(exc),
+                    )
+                logger.info("mcp.keys.routing.auto_set", primary="massive")
+                return {"primary": "massive", "changed": True, "reason": "MASSIVE_API_KEY supplied"}
+            return _routing_write_failed("auto_set_massive", result)
+        return None
+
+    if current_primary == "massive" and "massive" in _read_auto_pinned_providers(automanaged_path):
+        try:
+            result = save_routing(primary="auto")
+        except Exception as exc:
+            return _routing_write_failed("auto_revert_massive", exc)
+        if isinstance(result, dict) and result.get("saved"):
+            try:
+                _clear_auto_pinned_provider(automanaged_path, "massive")
+            except OSError as exc:
+                logger.warning(
+                    "mcp.keys.routing_marker_write_failed",
+                    path=str(automanaged_path),
+                    error=str(exc),
+                )
+            logger.info("mcp.keys.routing.auto_revert", primary="auto")
+            return {"primary": "auto", "changed": True, "reason": "MASSIVE_API_KEY removed"}
+        return _routing_write_failed("auto_revert_massive", result)
+    return None
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Pure tool handlers (transport-agnostic)
 # ──────────────────────────────────────────────────────────────────────
@@ -154,18 +306,27 @@ async def portfolio_keys_set(keys: dict[str, str]) -> dict[str, Any]:
     _persist(updates)
     _push_into_environ(updates)
 
+    # Auto-pin massive as primary provider when MASSIVE_API_KEY is supplied
+    # (or auto-revert to "auto" when it is deleted). Never clobbers an
+    # explicit non-default user override.
+    routing_change = _maybe_auto_route_massive(updates)
+
     set_keys = sorted(k for k, v in updates.items() if v)
     deleted_keys = sorted(k for k, v in updates.items() if not v)
     logger.info(
         "mcp.keys.set",
         configured=set_keys,
         deleted=deleted_keys,
+        routing_change=routing_change,
     )
-    return {
+    response: dict[str, Any] = {
         "configured": set_keys,
         "rejected": [],
         "deleted": deleted_keys,
     }
+    if routing_change is not None:
+        response["routing_change"] = routing_change
+    return response
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -257,7 +418,7 @@ def _key_recommendations(holdings_count: int | None) -> dict[str, Any]:
         massive_reason = (
             f"Portfolio has {holdings_count} holdings (>={_HUGE_PORTFOLIO_THRESHOLD}). "
             "yfinance free-tier rate-limits and times out at this size. "
-            "MASSIVE_API_KEY (Polygon) provides parallelized batch fetching "
+            "MASSIVE_API_KEY (Massive) provides parallelized batch fetching "
             "without throttling — without it, refresh will be slow and "
             "incomplete."
         )
@@ -286,7 +447,7 @@ def _key_recommendations(holdings_count: int | None) -> dict[str, Any]:
         "name": "MASSIVE_API_KEY",
         "priority": massive_priority,
         "reason": massive_reason,
-        "signup_url": "https://polygon.io/",
+        "signup_url": "https://massive.com/",
     })
 
     # News providers — recommended (any one, two-source for coverage).
@@ -333,7 +494,7 @@ async def portfolio_keys_recommend(portfolio_path: str | None = None) -> dict[st
 
     Use case: dashboard Settings tab + agent setup-orchestrator surface
     the recommendation so users with 200-holding portfolios know upfront
-    that they need a Polygon key for non-throttled refresh.
+    that they need a Massive key for non-throttled refresh.
     """
     path = portfolio_path or _active_portfolio_path()
     holdings_count = _count_portfolio_holdings(path) if path else None
@@ -360,8 +521,12 @@ async def portfolio_keys_delete(name: str) -> dict[str, Any]:
         }
     _persist({name: ""})
     _push_into_environ({name: ""})
-    logger.info("mcp.keys.delete", name=name)
-    return {"deleted": True, "name": name}
+    routing_change = _maybe_auto_route_massive({name: ""})
+    logger.info("mcp.keys.delete", name=name, routing_change=routing_change)
+    response: dict[str, Any] = {"deleted": True, "name": name}
+    if routing_change is not None:
+        response["routing_change"] = routing_change
+    return response
 
 
 # ──────────────────────────────────────────────────────────────────────

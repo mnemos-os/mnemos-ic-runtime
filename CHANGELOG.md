@@ -9,6 +9,58 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.4.1] — 2026-05-18
+
+### Added
+
+- **Auto-pin price-provider primary to `massive` when `MASSIVE_API_KEY`
+  is supplied.** New helper
+  `bridge/investorclaw_bridge/mcp/tools/keys.py::_maybe_auto_route_massive`
+  fires from both `portfolio_keys_set` and `portfolio_keys_delete` and:
+
+  - Pins `INVESTORCLAW_PRICE_PROVIDER=massive` (via the existing
+    `provider_routing.save_routing` path) when `MASSIVE_API_KEY` is set
+    AND the current primary is `auto`. Engine inherits via
+    `os.environ` mirroring; persisted to `/data/provider_routing.env`
+    so it survives restart.
+  - Auto-reverts the primary to `auto` when `MASSIVE_API_KEY` is
+    deleted AND the current primary is still `massive`.
+  - **Never clobbers an explicit non-default user override.** If the
+    user pinned primary to `finnhub` (or anything else other than
+    `massive`/`auto`), supplying or removing `MASSIVE_API_KEY` does
+    not touch routing.
+  - The response payload from `portfolio_keys_set` /
+    `portfolio_keys_delete` includes a `routing_change` block when a
+    change happened, so the agent / dashboard can surface the new
+    primary to the user.
+
+  5 new tests in `tests/test_keys.py` (47/47 pass across
+  keys + routing + recommend; rest of bridge suite unchanged).
+
+### Changed
+
+- **User-facing branding: `Polygon` → `Massive`.** Subscription /
+  upsell strings across documentation, dashboard UI, setup wizard
+  prompts, and signup links now refer to the provider as **Massive**
+  (`https://massive.com/`), reflecting the partner status now
+  available to InvestorClaw users. Files: `CAPABILITIES.md`,
+  `PRIVACY.md`, `README.md`, `SKILL.md`, `DISCLAIMER.md`,
+  `SECURITY.md`, `dashboard/index.html`,
+  `bridge/investorclaw_bridge/dashboard.py`,
+  `bridge/investorclaw_bridge/mcp/tools/keys.py`.
+
+  **Technical layer is unchanged**: the engine still uses the
+  `polygon-api-client` SDK, the `PolygonProvider` class, the
+  `POLYGON_API_KEY` env-var read fallback, and the `api.polygon.io`
+  endpoint URLs — Massive proxies the polygon.io-compatible API
+  surface, so the underlying transport stays identical.
+
+### Notes
+
+- Massive partner APIs (Benzinga news, analyst ratings) reach the
+  engine via the same `MASSIVE_API_KEY` once it is configured.
+- Engine pin unchanged: `IC_ENGINE_REF=11adc63c00e215c36aef9ffaf985555eb2f83bd6`.
+
 ## [4.4.0] — 2026-05-08
 
 ### Added

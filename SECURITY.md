@@ -42,7 +42,7 @@ Out of scope (please report to the upstream maintainers):
 - The `argonautsystems/ic-engine` Python source — file at
   https://github.com/argonautsystems/ic-engine/issues
 - Third-party providers the engine talks to (Together AI, Finnhub,
-  Polygon, etc.) — see their respective security pages
+  Massive, etc.) — see their respective security pages
 
 ## Security posture
 

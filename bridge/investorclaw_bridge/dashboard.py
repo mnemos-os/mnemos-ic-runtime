@@ -1764,9 +1764,12 @@ only.</p>
 
 <h2>Provider routing</h2>
 <p class="muted">Override ic-engine's price-data fallback chain. Use
-this when you have a premium provider key (e.g. Massive / Polygon)
+this when you have a premium provider key (e.g. Massive)
 and want it consulted first for every price + history fetch. Empty
-or <code>auto</code> = engine default routing.</p>
+or <code>auto</code> = engine default routing. Note: setting
+<code>MASSIVE_API_KEY</code> via the key forms auto-pins primary to
+<code>massive</code> (only when primary is currently <code>auto</code>;
+explicit overrides are preserved).</p>
 {routing_state}
 <div class="section-card">
 {routing_form}
