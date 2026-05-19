@@ -9,6 +9,25 @@ Distribution-edge artifacts (`SKILL.md`, `compose.yml`, `install.yaml`,
 `agent-skills/**`) are MIT-0; substantive code (bridge, dashboard,
 Dockerfile, tests) is Apache 2.0.
 
+## [4.4.3] — 2026-05-19
+
+### Fixed
+
+- **`portfolio_ask` zombie subprocess accumulation.** Each `portfolio_ask`
+  call now passes `--no-refresh` to `investorclaw ask`, so the engine uses
+  the cached envelope and only runs the narrator instead of triggering a
+  full per-question news/data pipeline refresh (news TTL=30s). Without this
+  flag, slow or unavailable narrative LLM providers (e.g., Together AI
+  serverless with no models loaded) caused `investorclaw ask` subprocesses
+  to hang indefinitely, accumulating zombies that eventually exhausted the
+  asyncio pool and blocked all new REST requests. Explicit data freshness is
+  handled by `portfolio_refresh` / the dashboard Regenerate button.
+  Validated: 30/30 cobol barrage PASS on TYPHON zeroclaw 2026-05-19.
+
+- **Dockerfile narrative model default updated from `MiniMaxAI/MiniMax-M2.7`
+  to `google/gemma-4-31B-it`.** MiniMax-M2.7 was removed from Together's
+  serverless tier in 2026-05 and requires a paid dedicated endpoint.
+
 ## [4.4.2] — 2026-05-18
 
 ### Added

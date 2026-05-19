@@ -292,7 +292,7 @@ ENV IC_DASHBOARD_BIND=0.0.0.0:8092
 # so the bridge can self-report its image version (the OCI label below
 # isn't readable from inside the container without docker socket access).
 # Bump this AND the LABEL line at the bottom of the file together.
-ENV IC_ENGINE_VERSION=4.4.0
+ENV IC_ENGINE_VERSION=4.4.3
 
 # ic-engine reads its own canonical env-var names (INVESTOR_CLAW_*).
 # Set them to the same values so subprocess'd analyzers honor /data/.
@@ -309,13 +309,16 @@ ENV INVESTORCLAW_PORTFOLIO_DIR=/data/portfolios
 # .env at runtime. See compose.yml for the canonical compose-internal value.
 ENV PYTHONUNBUFFERED=1
 
-# Narrative-synthesis defaults — Together AI MiniMax-M2 / gemma4.
+# Narrative-synthesis defaults — Together AI serverless.
 # Together is the fleet default per CLAUDE.md primary directive 5
-# ("Anthropic forbidden as LLM provider for the nclawzero/zeroclaw stack;
-#  MiniMax-via-Together is fleet default"). Cheaper than Gemini Pro by
-# a wide margin. If the operator wants to point at Google instead, they
-# should set INVESTORCLAW_NARRATIVE_MODEL to a *Flash* model — Pro is the
-# expensive one (Pro: $1.25/M input, $5/M output; Flash: $0.10/$0.40).
+# ("Anthropic forbidden as LLM provider for the nclawzero/zeroclaw stack").
+# Model: google/gemma-4-31B-it (cheapest serverless model with strong
+# narrative reasoning as of 2026-05). MiniMaxAI/MiniMax-M2.7 was removed
+# from Together's serverless tier in 2026-05 and now requires a paid
+# dedicated endpoint. Cheaper than Gemini Pro by a wide margin. If the
+# operator wants to point at Google instead, they should set
+# INVESTORCLAW_NARRATIVE_MODEL to a *Flash* model — Pro is the expensive
+# one (Pro: $1.25/M input, $5/M output; Flash: $0.10/$0.40).
 # Last cost incident: $70/night API bill from accidental Gemini Pro use,
 # 2026-04-30; documented in feedback_llm_provider_cost_policy.md.
 #
@@ -324,7 +327,7 @@ ENV PYTHONUNBUFFERED=1
 # only need to set the per-provider key file once.
 ENV INVESTORCLAW_NARRATIVE_PROVIDER=openai_compat
 ENV INVESTORCLAW_NARRATIVE_ENDPOINT=https://api.together.xyz/v1
-ENV INVESTORCLAW_NARRATIVE_MODEL=MiniMaxAI/MiniMax-M2.7
+ENV INVESTORCLAW_NARRATIVE_MODEL=google/gemma-4-31B-it
 # Consultation tier (deeper analysis, optional — used by select code paths).
 # Disabled by default; falls back to the narrative endpoint when invoked.
 # Operators with their own local-LLM endpoint set
@@ -356,4 +359,4 @@ LABEL org.opencontainers.image.description="Portfolio analysis service exposing 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/ncz-os/mnemos-ic-runtime"
 LABEL org.opencontainers.image.documentation="https://investorclaw.app"
-LABEL org.opencontainers.image.version="4.4.0"
+LABEL org.opencontainers.image.version="4.4.3"
