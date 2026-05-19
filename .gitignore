@@ -20,6 +20,9 @@ data/
 keys.env
 api-keys.env
 *.key
+*.pem
+secrets.*
+*.secret
 
 # Editor / OS
 .DS_Store

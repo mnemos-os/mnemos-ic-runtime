@@ -40,6 +40,9 @@ REPORTS_DIR = os.environ.get("IC_REPORTS_DIR", "/data/reports")
 # Hard cap on portfolio uploads.
 _MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 _UPLOAD_CHUNK_BYTES = 1024 * 1024
+_ALLOWED_UPLOAD_SUFFIXES = frozenset({
+    ".csv", ".tsv", ".xls", ".xlsx", ".pdf", ".json", ".ofx", ".qfx"
+})
 
 
 def _running_version() -> str:
@@ -2528,6 +2531,15 @@ def attach_to(
         if len(safe_name) > 200:
             safe_name = safe_name[-200:]
 
+        # Extension allowlist — reject unexpected file types early.
+        suffix = pathlib.Path(safe_name).suffix.lower()
+        if suffix not in _ALLOWED_UPLOAD_SUFFIXES:
+            allowed = ", ".join(sorted(_ALLOWED_UPLOAD_SUFFIXES))
+            return RedirectResponse(
+                url=f"/dashboard/settings?message={quote(f'File type {suffix!r} not allowed. Use: {allowed}')}",
+                status_code=303,
+            )
+
         pdir = pathlib.Path(os.environ.get("IC_PORTFOLIO_DIR", "/data/portfolios"))
         try:
             pdir.mkdir(parents=True, exist_ok=True)
@@ -2537,7 +2549,13 @@ def attach_to(
                 status_code=303,
             )
 
-        dest = pdir / safe_name
+        # Path containment — ensure dest stays inside pdir after resolution.
+        dest = (pdir / safe_name).resolve()
+        if not str(dest).startswith(str(pdir.resolve()) + os.sep) and dest != pdir.resolve():
+            return RedirectResponse(
+                url="/dashboard/settings?message=Invalid+filename",
+                status_code=303,
+            )
         total_bytes = 0
         try:
             with dest.open("wb") as f:
