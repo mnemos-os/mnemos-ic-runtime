@@ -3,7 +3,7 @@ name: investorclaw
 description: Deterministic-first portfolio analyzer — holdings, performance, Sharpe + Sortino, FRED yield curves, bond duration, sector breakdowns, scenario rebalancing — via MCP-HTTP. Backed by ic-engine and clio.
 homepage: https://github.com/argonautsystems/InvestorClaw
 user-invocable: true
-metadata: {"license":"MIT-0","version":"4.1.40","image":"ghcr.io/argonautsystems/ic-engine:4.1.40-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
+metadata: {"license":"MIT-0","version":"4.4.2","image":"ghcr.io/argonautsystems/ic-engine:4.4.2-cpu","mcp-endpoint":"http://localhost:18090/mcp","transport":"streamable-http"}
 ---
 
 <!--
@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT-0
 Copyright 2026 InvestorClaw Contributors
 -->
 
-# InvestorClaw — portfolio analysis skill (v4.1.40)
+# InvestorClaw — portfolio analysis skill (v4.4.2)
 
 A deterministic-first portfolio analyzer that does real money math: holdings
 snapshots, performance metrics, Sharpe ratios, FRED yield curves, bond
@@ -24,7 +24,7 @@ This skill follows the `compose-x-mcp-services` convention (2026-05-01 RFC; see 
 
 ## What you get
 
-Thirteen MCP tools (also available as plain HTTP REST endpoints):
+Twenty MCP tools (also available as plain HTTP REST endpoints):
 
 | Tool | Purpose |
 |---|---|
@@ -147,7 +147,7 @@ container goes into `init_state=failed`. Pre-creating the directory
 as the host user sidesteps the docker bind-mount UID inheritance
 quirk.
 
-The compose pulls `ghcr.io/argonautsystems/ic-engine:4.1.40-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
+The compose pulls `ghcr.io/argonautsystems/ic-engine:4.4.2-cpu` (publicly hosted, no auth) and runs it on `localhost:18090` (MCP + REST) and `localhost:18092` (dashboard).
 
 ### If Docker isn't installed
 
@@ -192,7 +192,7 @@ your agent talks to it. Expect this timeline on a fresh install:
 
 | Phase | Time | What's happening | What you'll see |
 |---|---|---|---|
-| Image extract | 5–30 s | First-time pull of `ic-engine:4.1.40-cpu` (~600 MB) | docker compose progress bars |
+| Image extract | 5–30 s | First-time pull of `ic-engine:4.4.2-cpu` (~600 MB) | docker compose progress bars |
 | Bridge boot | 2–3 s | FastMCP server binds `:18090`, dashboard binds `:18092` | `/healthz` returns 200, `init_state: not_started` |
 | `portfolio_setup` | 1–60 s | Auto-discover portfolio files in `./portfolios/` | `init_state: initializing`, `current_stage: setup` |
 | `portfolio_refresh` | 30–120 s | Pull quotes / analyst / news / FRED yields for each symbol | `init_state: initializing`, `current_stage: refresh` |
@@ -775,7 +775,7 @@ curl -s -X POST http://localhost:18090/api/portfolio/version_check | jq
 ```json
 {
   "running": "4.1.39",
-  "latest": "4.1.40",
+  "latest": "4.4.2",
   "upgrade_available": true,
   "next_steps": [...]
 }
@@ -947,7 +947,7 @@ discourage trivial passphrases).
 
 ```text
 User:  "Check for upgrades."
-Agent: portfolio_version_check → "v4.1.40 available; you're on v4.1.39"
+Agent: portfolio_version_check → "v4.4.2 available; you're on v4.4.1"
 User:  "Upgrade me."
 Agent: 1. portfolio_export → save snap.json
        2. (if new host) portfolio_keys_backup with user-supplied passphrase
@@ -997,7 +997,7 @@ privacy model (what stays local vs what goes to which provider) see
 ## Behavior contract
 
 - `portfolio_ask` invokes the engine's deterministic refresh-aware path; if a section is stale (news TTL=30s, others 60s) it is refreshed before answering. Earlier `--no-refresh` short-circuited routing entirely and produced a generic catalog blurb — that flag is intentionally NOT passed.
-- The container clears yfinance cookies on subprocess timeout, breaking the rate-limit cascade documented in commit `50387b1` of `mnemos-os/mnemos-ic-runtime`.
+- The container clears yfinance cookies on subprocess timeout, breaking the rate-limit cascade documented in commit `50387b1` of `ncz-os/mnemos-ic-runtime`.
 - Cross-container reach works via `http://172.17.0.1:18090/mcp` (Docker bridge IP) or via Compose service name `http://ic-engine:8090/mcp` (when both agent + ic-engine are in the same compose).
 
 ## Known issues (v4.1.1)
@@ -1015,10 +1015,10 @@ privacy model (what stays local vs what goes to which provider) see
 
 ## License + provenance
 
-- Service code: Apache 2.0 (`mnemos-os/mnemos-ic-runtime`)
+- Service code: Apache 2.0 (`ncz-os/mnemos-ic-runtime`)
 - Distribution-edge artifacts (this `SKILL.md`, `compose.yml`, `install.yaml`, `agent-skills/**`): **MIT-0** (MIT No Attribution — `LICENSE-MIT-0`). Required for ClawHub plugin publishing; the no-attribution clause means downstream skill registries can re-host without preserving copyright notice.
 - Image: `ghcr.io/argonautsystems/ic-engine:4.1.35-cpu@sha256:45a9c5bd2216ec41d6ce8bb89ae224158c668fbe652ee70c8264862c56aec3b4` (multi-arch amd64+arm64; also at `:latest`)
-- RFC: see `RFC-v0.1.md` in this bundle (`mnemos-os/mnemos-ic-runtime` GitHub repository)
+- RFC: see `RFC-v0.1.md` in this bundle (`ncz-os/mnemos-ic-runtime` GitHub repository)
 - Cross-project contract: `mnemos-os/mcp-contracts` GitHub repository
 
 ---

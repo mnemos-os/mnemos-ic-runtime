@@ -11,7 +11,7 @@
 
 Portfolio analysis and market intelligence for any MCP-capable agent.
 
-v4.1.34 | Apache 2.0 + MIT-0 | Educational Use Only
+v4.4.2 | Apache 2.0 + MIT-0 | Educational Use Only
 
 InvestorClaw v4.x is a containerized portfolio analyzer that runs as a
 Docker Compose stack and exposes its tools over MCP-HTTP at
@@ -72,14 +72,14 @@ Once accepted, it will be the canonical one-click install path.
 ## Quick Start
 
 ```bash
-git clone https://github.com/mnemos-os/mnemos-ic-runtime.git ~/.investorclaw
+git clone https://github.com/ncz-os/mnemos-ic-runtime.git ~/.investorclaw
 cd ~/.investorclaw
 mkdir -p portfolios     # IMPORTANT: pre-create so docker doesn't auto-create as root
 docker compose up -d    # uses the bundled compose.yml
 ```
 
 That's it. The compose pulls
-`ghcr.io/argonautsystems/ic-engine:4.1.34-cpu` (publicly hosted, no
+`ghcr.io/argonautsystems/ic-engine:4.4.2-cpu` (publicly hosted, no
 auth) and runs it on `localhost:18090` (MCP + REST) and
 `localhost:18092` (dashboard).
 
@@ -163,7 +163,7 @@ have moved:
 Refresh my portfolio.
 ```
 
-## Available MCP Tools (13 Total)
+## Available MCP Tools (20 Total)
 
 | Tool | Purpose |
 |---|---|
@@ -180,7 +180,7 @@ Refresh my portfolio.
 | `portfolio_response_list` | List recent stored responses |
 | `portfolio_response_delete` | Permanently delete a stored response |
 
-All 13 tools also have plain-HTTP REST endpoints at
+All 20 tools also have plain-HTTP REST endpoints at
 `http://127.0.0.1:18090/api/portfolio/*` — useful when MCP integration
 is flaky or you want to drive the engine from a shell.
 
@@ -383,7 +383,7 @@ See [PRIVACY.md](PRIVACY.md) for the full data-handling policy and
   30-persona avatar reference
 - [docs/EOD_REPORT.md](docs/EOD_REPORT.md) — end-of-day report feature walkthrough (what is in the report, how to generate, performance, optional email delivery)
 - [docs/MCP_TOOLS_REFERENCE.md](docs/MCP_TOOLS_REFERENCE.md) —
-  detailed per-tool reference for all 13 MCP tools (input / output
+  detailed per-tool reference for all 20 MCP tools (input / output
   schemas, latency, cache TTLs, allowlists, examples)
 - [docs/references/](docs/references/) — input / output / schema /
   consultative-LLM contracts (`contract-input.md`, `contract-output.md`,
@@ -448,6 +448,6 @@ financial advice.
 
 | Repo | Scope |
 |---|---|
-| [`mnemos-os/mnemos-ic-runtime`](https://github.com/mnemos-os/mnemos-ic-runtime) (this repo) | v4.x dockerized-skill bundle + Dockerfile + compose + dashboard |
+| [`ncz-os/mnemos-ic-runtime`](https://github.com/ncz-os/mnemos-ic-runtime) (this repo) | v4.x dockerized-skill bundle + Dockerfile + compose + dashboard |
 | [`argonautsystems/ic-engine`](https://github.com/argonautsystems/ic-engine) | ic-engine analytical Python source (pulled into the container at build time) |
 | [`argonautsystems/InvestorClaude`](https://github.com/argonautsystems/InvestorClaude) | v2.6.x Claude Code marketplace plugin (in-process via uv; separate install path) |
