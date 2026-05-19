@@ -12,14 +12,14 @@
 # in the ncz CLI (see fleet handoff to ncz-claude for CLI integration).
 #
 # Maintained by: investorclaw-claude on STUDIO; source of truth at
-# gitlab.com/mnemos-os/mnemos-ic-runtime/quadlets/ic-engine.container.
+# gitlab.com/ncz-os/mnemos-ic-runtime/quadlets/ic-engine.container.
 # When updating image digest after a release, update the Image= line and
 # bump the ncz pi-gen revision.
 
 [Unit]
 Description=InvestorClaw ic-engine — deterministic portfolio analyzer (v4.x)
 Documentation=https://github.com/argonautsystems/InvestorClaw
-Documentation=https://gitlab.com/mnemos-os/mnemos-ic-runtime
+Documentation=https://gitlab.com/ncz-os/mnemos-ic-runtime
 After=network-online.target
 Wants=network-online.target
 
